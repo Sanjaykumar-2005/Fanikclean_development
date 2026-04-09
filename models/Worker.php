@@ -32,4 +32,28 @@ class Worker {
             'status' => $data['status']
         ]);
     }
+
+    public function update($id, $data) {
+        $stmt = $this->db->prepare("
+            UPDATE workers 
+            SET full_name = :fn, 
+                mobile = :mob, 
+                aadhaar = :aadh, 
+                doj = :doj, 
+                category_id = :cat, 
+                site_id = :site, 
+                status = :status 
+            WHERE id = :id
+        ");
+        return $stmt->execute([
+            'id' => $id,
+            'fn' => $data['full_name'],
+            'mob' => $data['mobile'],
+            'aadh' => $data['aadhaar'],
+            'doj' => $data['doj'],
+            'cat' => $data['category_id'],
+            'site' => $data['site_id'],
+            'status' => $data['status']
+        ]);
+    }
 }

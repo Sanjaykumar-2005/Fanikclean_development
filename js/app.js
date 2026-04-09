@@ -104,3 +104,32 @@ function saveAtt() {
   toast('Attendance saved successfully!', 'success');
 }
 
+// ---- Worker Management ----
+function openAddWorkerModal() {
+  const form = document.getElementById('worker-form');
+  if (!form) return;
+  form.reset();
+  form.action = '/workers/create';
+  document.getElementById('worker-id').value = '';
+  document.getElementById('worker-modal-title').textContent = 'Add New Worker';
+  openModal('modal-add-worker');
+}
+
+function openEditWorkerModal(w) {
+  const form = document.getElementById('worker-form');
+  if (!form) return;
+  form.action = '/workers/update';
+  document.getElementById('worker-modal-title').textContent = 'Edit Worker';
+  
+  document.getElementById('worker-id').value = w.id;
+  document.getElementById('worker-full_name').value = w.full_name;
+  document.getElementById('worker-mobile').value = w.mobile;
+  document.getElementById('worker-aadhaar').value = w.aadhaar;
+  document.getElementById('worker-doj').value = w.doj;
+  document.getElementById('worker-category_id').value = w.category_id;
+  document.getElementById('worker-site_id').value = w.site_id || '';
+  document.getElementById('worker-status').value = w.status;
+  
+  openModal('modal-add-worker');
+}
+

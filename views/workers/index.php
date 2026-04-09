@@ -3,7 +3,7 @@
     <div class="flex gap8">
       <!-- Filters can go here -->
     </div>
-    <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-worker')">+ Add Worker</button>
+    <button class="btn btn-primary btn-sm" onclick="openAddWorkerModal()">+ Add Worker</button>
   </div>
 
   <div class="card">
@@ -22,7 +22,7 @@
             <td><span class="badge b-green"><?= htmlspecialchars($w['status']) ?></span></td>
             <td>
               <div class="btn-group">
-                <button class="btn btn-sm">Edit</button>
+                <button class="btn btn-sm" onclick='openEditWorkerModal(<?= json_encode($w) ?>)'>Edit</button>
               </div>
             </td>
           </tr>
@@ -36,23 +36,24 @@
   <div class="modal-overlay" id="modal-add-worker">
     <div class="modal modal-lg">
       <div class="modal-head">
-        <div class="modal-title">Add / Edit Worker</div>
+        <div class="modal-title" id="worker-modal-title">Add / Edit Worker</div>
         <button type="button" class="modal-close" onclick="closeModal('modal-add-worker')">×</button>
       </div>
 
-      <form method="POST" action="/workers/create">
+      <form method="POST" action="/workers/create" id="worker-form">
+        <input type="hidden" name="id" id="worker-id">
         <div class="form-section-title">Personal Details</div>
         <div class="form-grid mb16">
-          <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" type="text" name="full_name" placeholder="Worker full name" required></div>
-          <div class="form-group"><label class="form-label">Mobile Number</label><input class="form-input" type="tel" name="mobile" placeholder="10-digit number" required></div>
-          <div class="form-group"><label class="form-label">Aadhaar / ID Number</label><input class="form-input" type="text" name="aadhaar" placeholder="12-digit Aadhaar"></div>
-          <div class="form-group"><label class="form-label">Date of Joining</label><input class="form-input" type="date" name="doj" required></div>
+          <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" type="text" name="full_name" id="worker-full_name" placeholder="Worker full name" required></div>
+          <div class="form-group"><label class="form-label">Mobile Number</label><input class="form-input" type="tel" name="mobile" id="worker-mobile" placeholder="10-digit number" required></div>
+          <div class="form-group"><label class="form-label">Aadhaar / ID Number</label><input class="form-input" type="text" name="aadhaar" id="worker-aadhaar" placeholder="12-digit Aadhaar"></div>
+          <div class="form-group"><label class="form-label">Date of Joining</label><input class="form-input" type="date" name="doj" id="worker-doj" required></div>
         </div>
 
         <div class="form-section-title">Assignment</div>
         <div class="form-grid">
           <div class="form-group"><label class="form-label">Worker Category</label>
-            <select class="form-input" name="category_id">
+            <select class="form-input" name="category_id" id="worker-category_id">
               <option value="1">Supervisor</option>
               <option value="2">Associate</option>
               <option value="3">Skilled</option>
@@ -60,7 +61,7 @@
             </select>
           </div>
           <div class="form-group"><label class="form-label">Assign to Site</label>
-            <select class="form-input" name="site_id">
+            <select class="form-input" name="site_id" id="worker-site_id">
               <option value="">Unassigned</option>
               <?php
                 $db = Database::connect();
@@ -72,7 +73,7 @@
             </select>
           </div>
           <div class="form-group"><label class="form-label">Status</label>
-            <select class="form-input" name="status">
+            <select class="form-input" name="status" id="worker-status">
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
             </select>

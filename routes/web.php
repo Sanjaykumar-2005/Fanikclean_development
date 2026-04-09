@@ -13,6 +13,7 @@ $router->get('/dashboard', 'DashboardController', 'index');
 // Workers
 $router->get('/workers', 'WorkerController', 'index');
 $router->post('/workers/create', 'WorkerController', 'create');
+$router->post('/workers/update', 'WorkerController', 'update');
 
 // Clients
 $router->get('/clients', 'ClientController', 'index');

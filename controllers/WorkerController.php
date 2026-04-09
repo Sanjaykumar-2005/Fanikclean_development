@@ -41,5 +41,30 @@ class WorkerController extends Controller {
         $stmt->execute(['sid' => $site_id]);
         echo json_encode($stmt->fetchAll());
     }
+
+    public function update() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $id = $_POST['id'] ?? null;
+            if (!$id) {
+                $this->redirect('/workers');
+                return;
+            }
+
+            $workerModel = new Worker();
+            $data = [
+                'full_name' => $_POST['full_name'] ?? '',
+                'mobile' => $_POST['mobile'] ?? '',
+                'aadhaar' => $_POST['aadhaar'] ?? '',
+                'doj' => $_POST['doj'] ?? date('Y-m-d'),
+                'category_id' => $_POST['category_id'] ?? 4,
+                'site_id' => !empty($_POST['site_id']) ? $_POST['site_id'] : null,
+                'status' => $_POST['status'] ?? 'Active'
+            ];
+            
+            $workerModel->update($id, $data);
+            $_SESSION['toast'] = "Worker updated successfully";
+            $this->redirect('/workers');
+        }
+    }
 }
 
