@@ -62,9 +62,13 @@
           <div class="form-group"><label class="form-label">Assign to Site</label>
             <select class="form-input" name="site_id">
               <option value="">Unassigned</option>
-              <!-- Fetch dynamically in real app -->
-              <option value="1">TechPark Offices</option>
-              <option value="2">Horizon Hotels</option>
+              <?php
+                $db = Database::connect();
+                $siteRows = $db->query("SELECT id, name FROM sites ORDER BY name")->fetchAll();
+                foreach($siteRows as $site):
+              ?>
+              <option value="<?= $site['id'] ?>"><?= htmlspecialchars($site['name']) ?></option>
+              <?php endforeach; ?>
             </select>
           </div>
           <div class="form-group"><label class="form-label">Status</label>

@@ -16,8 +16,8 @@
             <?php endforeach; ?>
         </select>
       </div>
-      <button type="submit" class="btn btn-primary btn-sm">Save Attendance</button>
-    </div>
+      <button type="submit" class="btn btn-primary btn-sm" style="margin-left:8px;">Save Attendance</button>
+      <div style="clear:both;"></div>
 
     <!-- Script to load workers via API -->
     <script>
@@ -42,7 +42,7 @@
             data.forEach(w => {
                 html += '<tr>';
                 html += '<td class="bold">' + w.full_name + '</td>';
-                html += '<td><select class="form-input" name="attendance['+w.id+'][status]" style="width:120px;" required><option value="">--</option><option value="p">Present</option><option value="a">Absent</option><option value="h">Half</option><option value="off">Off</option></select></td>';
+                html += '<td><select class="form-input" name="attendance['+w.id+'][status]" style="width:120px;"><option value="">--</option><option value="p">Present</option><option value="a">Absent</option><option value="h">Half</option><option value="off">Off</option></select></td>';
                 html += '<td><input type="number" step="0.5" name="attendance['+w.id+'][ot]" class="form-input" style="width:80px;" placeholder="0"></td>';
                 html += '<td><input type="text" name="attendance['+w.id+'][note]" class="form-input" placeholder="Note"></td>';
                 html += '</tr>';

@@ -45,4 +45,13 @@ class Payroll {
             $this->db->rollBack();
         }
     }
+    public function getAll() {
+        return $this->db->query("
+            SELECT p.*, w.full_name as name, wc.name as category_name
+            FROM payroll p
+            JOIN workers w ON p.worker_id = w.id
+            JOIN worker_categories wc ON w.category_id = wc.id
+            ORDER BY p.month_year DESC, w.full_name ASC
+        ")->fetchAll();
+    }
 }

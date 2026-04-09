@@ -7,8 +7,12 @@ class PayrollController extends Controller {
     }
 
     public function index() {
+        $payrollModel = new Payroll();
+        $payrolls = $payrollModel->getAll();
+
         $this->view('payroll/index', [
-            'pageTitle' => 'Payroll Processing'
+            'pageTitle' => 'Payroll Processing',
+            'payrolls' => $payrolls
         ]);
     }
 
