@@ -1,0 +1,90 @@
+<?php
+require_once __DIR__ . '/../config/Database.php';
+
+class Invoice {
+    private $db;
+    public function __construct() { $this->db = Database::connect(); }
+
+    public function getAllInvoices() {
+        return $this->db->query("
+            SELECT i.invoice_no, i.issue_date, i.amount, i.status, c.company_name, b.month_year
+            FROM invoices i
+            JOIN billing b ON i.billing_id = b.id
+            JOIN clients c ON b.client_id = c.id
+            ORDER BY i.id DESC
+        ")->fetchAll();
+    }
+
+    public function getPendingBilling() {
+        return $this->db->query("
+            SELECT b.*, c.company_name 
+            FROM billing b 
+            JOIN clients c ON b.client_id = c.id
+            WHERE b.status != 'Invoiced'
+        ")->fetchAll();
+    }
+
+    public function generateFromBilling($billingId) {
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare("SELECT grand_total FROM billing WHERE id = :bid");
+            $stmt->execute(['bid' => $billingId]);
+            $bill = $stmt->fetch();
+
+            if (!$bill) { throw new Exception("Billing missing"); }
+
+            $invNo = 'INV-' . date('ym') . '-' . rand(100, 999);
+
+            $ins = $this->db->prepare("
+                INSERT INTO invoices (billing_id, invoice_no, issue_date, due_date, amount, status) 
+                VALUES (:bid, :inv, :iss, :due, :amt, 'Unpaid')
+            ");
+            $ins->execute([
+                'bid' => $billingId,
+                'inv' => $invNo,
+                'iss' => date('Y-m-d'),
+                'due' => date('Y-m-d', strtotime('+15 days')), // Net 15
+                'amt' => $bill['grand_total']
+            ]);
+
+            $upd = $this->db->prepare("UPDATE billing SET status = 'Invoiced' WHERE id = :bid");
+            $upd->execute(['bid' => $billingId]);
+
+            $this->db->commit();
+            return true;
+        } catch (\Exception $e) {
+            $this->db->rollBack();
+            return false;
+        }
+    }
+
+    public function getInvoiceDetails($invoiceNo) {
+        $stmt = $this->db->prepare("
+            SELECT i.*, b.month_year, c.company_name, c.contact_person, c.address, c.gstin, c.id as client_id
+            FROM invoices i
+            JOIN billing b ON i.billing_id = b.id
+            JOIN clients c ON b.client_id = c.id
+            WHERE i.invoice_no = :inv
+        ");
+        $stmt->execute(['inv' => $invoiceNo]);
+        $data = $stmt->fetch();
+
+        if (!$data) return null;
+
+        $itemsStmt = $this->db->prepare("
+            SELECT wc.name as description, 
+                   SUM(CASE WHEN a.status='p' THEN 1 WHEN a.status='h' THEN 0.5 WHEN a.status='off' THEN 1 ELSE 0 END) as quantity, 
+                   wc.default_rate as rate
+            FROM attendance a
+            JOIN workers w ON a.worker_id = w.id
+            JOIN worker_categories wc ON w.category_id = wc.id
+            JOIN sites s ON a.site_id = s.id
+            WHERE s.client_id = :cid AND TO_CHAR(a.attendance_date, 'YYYY-MM') = :my
+            GROUP BY wc.name, wc.default_rate
+        ");
+        $itemsStmt->execute(['cid' => $data['client_id'], 'my' => $data['month_year']]);
+        $data['items'] = $itemsStmt->fetchAll();
+
+        return $data;
+    }
+}
