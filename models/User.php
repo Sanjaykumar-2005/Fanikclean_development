@@ -15,6 +15,15 @@ class User {
     }
 
     public function create($fullName, $email, $passwordHash, $roleId = 2) {
+        // Check if any users exist in the system
+        $countStmt = $this->db->query("SELECT COUNT(*) FROM users");
+        $count = $countStmt->fetchColumn();
+        
+        // If this is the very first user, automatically make them an Admin (Role ID 1)
+        if ($count == 0) {
+            $roleId = 1;
+        }
+
         $stmt = $this->db->prepare("INSERT INTO users (full_name, email, password_hash, role_id) VALUES (:f, :e, :p, :r)");
         return $stmt->execute(['f' => $fullName, 'e' => $email, 'p' => $passwordHash, 'r' => $roleId]);
     }
