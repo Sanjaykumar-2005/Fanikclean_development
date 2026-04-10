@@ -5,23 +5,50 @@ class Invoice {
     private $db;
     public function __construct() { $this->db = Database::connect(); }
 
-    public function getAllInvoices() {
-        return $this->db->query("
-            SELECT i.invoice_no, i.issue_date, i.amount, i.status, c.company_name, b.month_year
+    public function getAllInvoices($siteId = null) {
+        $query = "
+            SELECT i.invoice_no, i.issue_date, i.amount, i.status, c.company_name, b.month_year, s.name as site_name
             FROM invoices i
             JOIN billing b ON i.billing_id = b.id
             JOIN clients c ON b.client_id = c.id
-            ORDER BY i.id DESC
-        ")->fetchAll();
+            JOIN sites s ON b.site_id = s.id
+        ";
+        
+        if ($siteId) {
+            $query .= " WHERE b.site_id = :sid ";
+        }
+        
+        $query .= " ORDER BY i.id DESC";
+        
+        $stmt = $this->db->prepare($query);
+        if ($siteId) {
+            $stmt->execute(['sid' => $siteId]);
+        } else {
+            $stmt->execute();
+        }
+        return $stmt->fetchAll();
     }
 
-    public function getPendingBilling() {
-        return $this->db->query("
-            SELECT b.*, c.company_name 
+    public function getPendingBilling($siteId = null) {
+        $query = "
+            SELECT b.*, c.company_name, s.name as site_name 
             FROM billing b 
             JOIN clients c ON b.client_id = c.id
+            JOIN sites s ON b.site_id = s.id
             WHERE b.status != 'Invoiced'
-        ")->fetchAll();
+        ";
+        
+        if ($siteId) {
+            $query .= " AND b.site_id = :sid ";
+        }
+        
+        $stmt = $this->db->prepare($query);
+        if ($siteId) {
+            $stmt->execute(['sid' => $siteId]);
+        } else {
+            $stmt->execute();
+        }
+        return $stmt->fetchAll();
     }
 
     public function generateFromBilling($billingId) {
@@ -60,7 +87,7 @@ class Invoice {
 
     public function getInvoiceDetails($invoiceNo) {
         $stmt = $this->db->prepare("
-            SELECT i.*, b.month_year, c.company_name, c.contact_person, c.address, c.gstin, c.id as client_id
+            SELECT i.*, b.month_year, b.site_id, c.company_name, c.contact_person, c.address, c.gstin, c.id as client_id
             FROM invoices i
             JOIN billing b ON i.billing_id = b.id
             JOIN clients c ON b.client_id = c.id
@@ -78,11 +105,10 @@ class Invoice {
             FROM attendance a
             JOIN workers w ON a.worker_id = w.id
             JOIN worker_categories wc ON w.category_id = wc.id
-            JOIN sites s ON a.site_id = s.id
-            WHERE s.client_id = :cid AND TO_CHAR(a.attendance_date, 'YYYY-MM') = :my
+            WHERE a.site_id = :sid AND TO_CHAR(a.attendance_date, 'YYYY-MM') = :my
             GROUP BY wc.name, wc.default_rate
         ");
-        $itemsStmt->execute(['cid' => $data['client_id'], 'my' => $data['month_year']]);
+        $itemsStmt->execute(['sid' => $data['site_id'], 'my' => $data['month_year']]);
         $data['items'] = $itemsStmt->fetchAll();
 
         return $data;

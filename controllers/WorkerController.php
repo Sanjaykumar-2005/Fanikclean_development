@@ -8,7 +8,8 @@ class WorkerController extends Controller {
 
     public function index() {
         $workerModel = new Worker();
-        $workers = $workerModel->getAll();
+        $siteId = $this->isAdmin() ? null : $this->getSiteId();
+        $workers = $workerModel->getAll($siteId);
         $this->view('workers/index', ['workers' => $workers]);
     }
 

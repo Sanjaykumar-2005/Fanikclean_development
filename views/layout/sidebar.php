@@ -18,7 +18,10 @@
   <div class="nav-section">
     <div class="nav-sec-label">People</div>
     <a href="/workers" class="nav-item <?= strpos($_SERVER['REQUEST_URI'], 'workers') !== false ? 'active' : '' ?>">Workers</a>
-    <a href="/clients" class="nav-item <?= strpos($_SERVER['REQUEST_URI'], 'clients') !== false ? 'active' : '' ?>">Clients & Sites</a>
+    <?php if($_SESSION['role_id'] == 1): ?>
+      <a href="/clients" class="nav-item <?= strpos($_SERVER['REQUEST_URI'], 'clients') !== false ? 'active' : '' ?>">Clients & Sites</a>
+      <a href="/users" class="nav-item <?= strpos($_SERVER['REQUEST_URI'], 'users') !== false ? 'active' : '' ?>">User Management</a>
+    <?php endif; ?>
   </div>
 
   <div class="nav-section">

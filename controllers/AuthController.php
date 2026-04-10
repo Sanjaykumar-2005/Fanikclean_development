@@ -21,6 +21,7 @@ class AuthController extends Controller {
         if ($user && password_verify($password, $user['password_hash'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['role_id'] = $user['role_id'];
+            $_SESSION['site_id'] = $user['site_id']; // For Manager restriction
             $_SESSION['user_name'] = $user['full_name'];
             $this->redirect('/dashboard');
         } else {

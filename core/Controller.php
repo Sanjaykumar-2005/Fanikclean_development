@@ -23,4 +23,12 @@ class Controller {
             $this->redirect('/login');
         }
     }
+
+    protected function isAdmin() {
+        return isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1;
+    }
+
+    protected function getSiteId() {
+        return $_SESSION['site_id'] ?? null;
+    }
 }

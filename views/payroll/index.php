@@ -22,16 +22,32 @@
   </div>
 
   <div class="stats-grid mb16">
-    <div class="stat-card"><div class="stat-label">Gross Payroll</div><div class="stat-val" style="font-size:20px">--</div></div>
-    <div class="stat-card"><div class="stat-label">Overtime Pay</div><div class="stat-val" style="font-size:20px">--</div></div>
-    <div class="stat-card"><div class="stat-label">Net Payroll</div><div class="stat-val" style="font-size:20px;color:var(--teal)">--</div></div>
+    <div class="stat-card"><div class="stat-label">Gross Payroll</div><div class="stat-val" id="gross-payroll" style="font-size:20px">--</div></div>
+    <div class="stat-card"><div class="stat-label">Overtime Pay</div><div class="stat-val" id="ot-payroll" style="font-size:20px">--</div></div>
+    <div class="stat-card"><div class="stat-label">Net Payroll</div><div class="stat-val" id="net-payroll" style="font-size:20px;color:var(--teal)">--</div></div>
   </div>
 
-  <div class="card">
-    <div class="card-head">
+  <div class="card mb16">
+    <div class="card-head" style="display:flex; justify-content:space-between; align-items:center;">
       <div class="card-title">Payroll Records</div>
+      <a href="/payroll/export" class="btn btn-outline btn-sm">Generate Excel (.xls)</a>
     </div>
     <div class="table-responsive">
+<?php
+    $totalGross = 0; $totalOT = 0; $totalNet = 0;
+    foreach($payrolls as $p) {
+        $totalGross += $p['basic_pay'];
+        $totalOT += $p['ot_pay'];
+        $totalNet += $p['net_pay'];
+    }
+?>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        document.getElementById('gross-payroll').textContent = "₹" + <?= number_format($totalGross, 2, '.', '') ?>;
+        document.getElementById('ot-payroll').textContent = "₹" + <?= number_format($totalOT, 2, '.', '') ?>;
+        document.getElementById('net-payroll').textContent = "₹" + <?= number_format($totalNet, 2, '.', '') ?>;
+    });
+</script>
       <table class="data-table">
         <thead>
           <tr>

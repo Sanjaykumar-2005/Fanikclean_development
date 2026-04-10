@@ -4,6 +4,9 @@ require_once __DIR__ . '/../models/Client.php';
 class ClientController extends Controller {
     public function __construct() {
         $this->checkAuth();
+        if (!$this->isAdmin()) {
+            $this->redirect('/dashboard');
+        }
     }
 
     public function index() {

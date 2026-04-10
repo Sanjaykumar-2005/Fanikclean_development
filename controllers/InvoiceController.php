@@ -2,12 +2,16 @@
 require_once __DIR__ . '/../models/Invoice.php';
 
 class InvoiceController extends Controller {
-    public function __construct() { $this->checkAuth(); }
+    public function __construct() { 
+        $this->checkAuth(); 
+    }
 
     public function index() {
         $invModel = new Invoice();
-        $pendingBills = $invModel->getPendingBilling();
-        $invoices = $invModel->getAllInvoices();
+        $siteId = $this->isAdmin() ? null : $this->getSiteId();
+        
+        $pendingBills = $invModel->getPendingBilling($siteId);
+        $invoices = $invModel->getAllInvoices($siteId);
 
         $this->view('invoices/index', [
             'pageTitle' => 'Invoice Generation',

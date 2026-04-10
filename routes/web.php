@@ -15,6 +15,10 @@ $router->get('/workers', 'WorkerController', 'index');
 $router->post('/workers/create', 'WorkerController', 'create');
 $router->post('/workers/update', 'WorkerController', 'update');
 
+// Users
+$router->get('/users', 'UserController', 'index');
+$router->post('/users/update', 'UserController', 'update');
+
 // Clients
 $router->get('/clients', 'ClientController', 'index');
 $router->post('/clients/create', 'ClientController', 'create');
@@ -33,6 +37,7 @@ $router->get('/billing', 'BillingController', 'index');
 $router->post('/billing/generate', 'BillingController', 'generate');
 $router->get('/invoices', 'InvoiceController', 'index');
 $router->get('/payroll', 'PayrollController', 'index');
+$router->get('/payroll/export', 'PayrollController', 'export');
 $router->post('/payroll/approve', 'PayrollController', 'approve');
 
 // Sites

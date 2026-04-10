@@ -5,14 +5,26 @@ class Worker {
     private $db;
     public function __construct() { $this->db = Database::connect(); }
 
-    public function getAll() {
-        $stmt = $this->db->query("
+    public function getAll($siteId = null) {
+        $query = "
             SELECT w.*, c.name as category_name, s.name as site_name 
             FROM workers w 
             LEFT JOIN worker_categories c ON w.category_id = c.id
             LEFT JOIN sites s ON w.site_id = s.id
-            ORDER BY w.id DESC
-        ");
+        ";
+        
+        if ($siteId) {
+            $query .= " WHERE w.site_id = :sid ";
+        }
+        
+        $query .= " ORDER BY w.id DESC";
+        
+        $stmt = $this->db->prepare($query);
+        if ($siteId) {
+            $stmt->execute(['sid' => $siteId]);
+        } else {
+            $stmt->execute();
+        }
         return $stmt->fetchAll();
     }
 
