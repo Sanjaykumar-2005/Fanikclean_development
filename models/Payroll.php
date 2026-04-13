@@ -9,31 +9,43 @@ class Payroll {
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare("
-                SELECT w.id, w.category_id, wc.default_rate, 
+                SELECT w.id, w.category_id, w.daily_rate_override, wc.default_rate, 
+                       rm.rate_per_day as client_rate,
                        SUM(CASE WHEN a.status='p' THEN 1 WHEN a.status='h' THEN 0.5 WHEN a.status='off' THEN 1 ELSE 0 END) as days, 
                        SUM(COALESCE(a.ot_hours, 0)) as ot_hrs
                 FROM workers w
                 JOIN worker_categories wc ON w.category_id = wc.id
+                LEFT JOIN sites s ON w.site_id = s.id
+                LEFT JOIN rate_master rm ON s.client_id = rm.client_id AND w.category_id = rm.category_id
                 LEFT JOIN attendance a ON w.id = a.worker_id AND TO_CHAR(a.attendance_date, 'YYYY-MM') = :my
-                GROUP BY w.id, wc.default_rate
+                GROUP BY w.id, w.daily_rate_override, wc.default_rate, rm.rate_per_day
             ");
             $stmt->execute(['my' => $monthYear]);
             $workers = $stmt->fetchAll();
 
             foreach ($workers as $w) {
-                // Payroll Business Logic
+                // Determine rate priority: 
+                // 1. Individual worker override 
+                // 2. Client-specific category rate (Rate Master)
+                // 3. System-wide category default
+                $rate = $w['daily_rate_override'] ?: ($w['client_rate'] ?: $w['default_rate']);
+                
                 $days = $w['days'] ?? 0;
                 $ot = $w['ot_hrs'] ?? 0;
-                $rate = $w['default_rate'];
                 
                 $basicPay = $days * $rate;
-                $otPay = $ot * ($rate / 8); // Assuming 8 hr day
+                $otPay = $ot * ($rate / 8); // Assuming 8 hr standard day
                 $netPay = $basicPay + $otPay;
 
                 $ins = $this->db->prepare("
-                    INSERT INTO payroll (worker_id, month_year, days_worked, basic_pay, ot_days, ot_pay, advance_deduction, net_pay)
-                    VALUES (:wid, :my, :dw, :bp, :otd, :otp, 0, :np)
-                    ON CONFLICT (worker_id, month_year) DO UPDATE SET days_worked=EXCLUDED.days_worked, basic_pay=EXCLUDED.basic_pay, ot_pay=EXCLUDED.ot_pay, net_pay=EXCLUDED.net_pay
+                    INSERT INTO payroll (worker_id, month_year, days_worked, basic_pay, ot_days, ot_pay, advance_deduction, net_pay, status)
+                    VALUES (:wid, :my, :dw, :bp, :otd, :otp, 0, :np, 'Pending')
+                    ON CONFLICT (worker_id, month_year) 
+                    DO UPDATE SET 
+                        days_worked = EXCLUDED.days_worked, 
+                        basic_pay = EXCLUDED.basic_pay, 
+                        ot_pay = EXCLUDED.ot_pay, 
+                        net_pay = EXCLUDED.net_pay
                 ");
                 $ins->execute([
                     'wid' => $w['id'], 'my' => $monthYear,
@@ -41,8 +53,10 @@ class Payroll {
                 ]);
             }
             $this->db->commit();
+            return true;
         } catch (\Exception $e) {
-            $this->db->rollBack();
+            if ($this->db->inTransaction()) $this->db->rollBack();
+            return false;
         }
     }
     public function getAll($siteId = null) {

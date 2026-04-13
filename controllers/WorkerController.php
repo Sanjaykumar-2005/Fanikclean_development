@@ -8,9 +8,20 @@ class WorkerController extends Controller {
 
     public function index() {
         $workerModel = new Worker();
-        $siteId = $this->isAdmin() ? null : $this->getSiteId();
-        $workers = $workerModel->getAll($siteId);
-        $this->view('workers/index', ['workers' => $workers]);
+        $db = Database::connect();
+        
+        $siteIdScope = $this->isAdmin() ? null : $this->getSiteId();
+        $workers = $workerModel->getAll($siteIdScope);
+        
+        // Fetch supplemental data for the Add/Edit form
+        $categories = $db->query("SELECT id, name FROM worker_categories ORDER BY id")->fetchAll();
+        $sites = $db->query("SELECT id, name FROM sites ORDER BY name")->fetchAll();
+
+        $this->view('workers/index', [
+            'workers' => $workers,
+            'categories' => $categories,
+            'sites' => $sites
+        ]);
     }
 
     public function create() {

@@ -50,3 +50,13 @@ $router->get('/api/workers', 'WorkerController', 'apiGetBySite');
 $router->post('/invoices/generate', 'InvoiceController', 'generate');
 $router->post('/invoices/pay', 'InvoiceController', 'pay');
 $router->get('/invoices/print', 'InvoiceController', 'print');
+
+// Financial & Configuration (New Modules)
+$router->get('/financial', 'FinancialController', 'index');
+$router->get('/rates', 'RateController', 'index');
+$router->post('/rates/updateDefault', 'RateController', 'updateDefault');
+$router->get('/audit', 'AuditController', 'index');
+$router->post('/leave/reject', 'LeaveController', 'reject');
+$router->get('/reports', 'ReportController', 'index');
+
+
