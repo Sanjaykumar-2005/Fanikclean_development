@@ -1,0 +1,25 @@
+# Dependency directories
+vendor/
+node_modules/
+
+# Environment and sensitive files
+.env
+.env.*
+.env.local
+*.log
+error_log
+php_errors.log
+
+# IDE and OS specific files
+.idea/
+.vscode/
+*.suo
+*.user
+.DS_Store
+Thumbs.db
+
+# Temp files
+*.swp
+*.swo
+/tmp/
+test.txt
