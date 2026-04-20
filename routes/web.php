@@ -20,6 +20,7 @@ $router->post('/workers/assets/delete', 'WorkerController', 'deleteAsset');
 
 // Users
 $router->get('/users', 'UserController', 'index');
+$router->post('/users/create', 'UserController', 'create');
 $router->post('/users/update', 'UserController', 'update');
 $router->get('/users/assignments', 'ManagerSiteController', 'index');
 $router->post('/users/assignments/save', 'ManagerSiteController', 'assign');

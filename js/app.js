@@ -75,24 +75,16 @@ function openEditWorkerModal(w) {
 
 // ---- User Management ----
 function openAddUserModal() {
-    const form = document.getElementById('user-form');
-    if (!form) return;
-    form.reset();
-    form.action = '/users/create';
-    document.getElementById('edit-user-id').value = '';
-    document.getElementById('user-modal-title').textContent = 'Invite New Administrator';
-    openModal('modal-edit-user');
+    openModal('modal-add-user');
 }
 
 function openEditUserModal(u) {
     const form = document.getElementById('user-form');
     if (!form) return;
-    form.action = '/users/update';
     document.getElementById('edit-user-id').value = u.id;
     document.getElementById('edit-user-name').value = u.full_name;
     document.getElementById('edit-user-role').value = u.role_id;
     document.getElementById('edit-user-site').value = u.site_id || '';
     document.getElementById('edit-user-status').value = u.status;
-    document.getElementById('user-modal-title').textContent = 'Update Permissions';
     openModal('modal-edit-user');
 }

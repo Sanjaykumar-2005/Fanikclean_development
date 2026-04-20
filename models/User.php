@@ -43,6 +43,7 @@ class User {
             UPDATE users 
             SET full_name = :fn, 
                 role_id = :rid, 
+                site_id = :sid,
                 status = :status 
             WHERE id = :id
         ");
@@ -50,6 +51,7 @@ class User {
             'id' => $id,
             'fn' => $data['full_name'],
             'rid' => $data['role_id'],
+            'sid' => !empty($data['site_id']) ? $data['site_id'] : null,
             'status' => $data['status']
         ]);
     }

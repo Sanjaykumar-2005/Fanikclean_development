@@ -10,7 +10,7 @@
   <span id="toast-msg">Action completed</span>
 </div>
 
-<script src="/js/app.js"></script>
+<script src="/js/app.js?v=<?= time() ?>"></script>
 
 </body>
 </html>

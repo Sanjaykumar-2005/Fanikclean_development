@@ -103,4 +103,48 @@
       </form>
     </div>
   </div>
+
+  <!-- ADD USER MODAL -->
+  <div class="modal-overlay" id="modal-add-user">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">Create New System User</div>
+        <button type="button" class="modal-close" onclick="closeModal('modal-add-user')">×</button>
+      </div>
+
+      <form method="POST" action="/users/create" id="add-user-form">
+        <div style="padding: 24px;">
+          <div class="form-group mb16">
+            <label class="form-label">Full Name</label>
+            <input class="form-input" type="text" name="full_name" placeholder="Enter Full Name" required>
+          </div>
+          
+          <div class="form-group mb16">
+            <label class="form-label">Email Address</label>
+            <input class="form-input" type="email" name="email" placeholder="email@example.com" required>
+          </div>
+
+          <div class="form-grid mb16">
+            <div class="form-group">
+              <label class="form-label">Temporary Password</label>
+              <input class="form-input" type="password" name="password" placeholder="••••••••" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">System Role</label>
+              <select class="form-input" name="role_id" required>
+                <?php foreach($roles as $r): ?>
+                  <option value="<?= $r['id'] ?>"><?= $r['name'] ?></option>
+                <?php endforeach; ?>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn" style="border:none; background:transparent;" onclick="closeModal('modal-add-user')">Cancel</button>
+          <button type="submit" class="btn btn-primary" style="padding: 10px 24px;">Register User</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>

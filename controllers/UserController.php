@@ -20,6 +20,27 @@ class UserController extends Controller {
             'roles' => $roles
         ]);
     }
+    public function create() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $name = $_POST['full_name'];
+            $email = $_POST['email'];
+            $password = $_POST['password'];
+            $roleId = $_POST['role_id'];
+            
+            $passwordHash = password_hash($password, PASSWORD_BCRYPT);
+            
+            $userModel = new User();
+            // Check if user exists
+            if ($userModel->findByEmail($email)) {
+                $_SESSION['error'] = "Email already registered";
+            } else {
+                if ($userModel->create($name, $email, $passwordHash, $roleId)) {
+                    $_SESSION['toast'] = "User created successfully";
+                }
+            }
+            $this->redirect('/users');
+        }
+    }
 
     public function update() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
