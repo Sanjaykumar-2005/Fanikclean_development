@@ -10,18 +10,53 @@
   <div class="card">
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Client ID</th><th>Company Name</th><th>Contact</th><th>Mobile</th><th>Status</th></tr></thead>
+        <thead>
+          <tr>
+            <th>Client Information</th>
+            <th>Contact Details</th>
+            <th>Locations (Sites)</th>
+            <th class="text-right">Actions</th>
+          </tr>
+        </thead>
         <tbody>
           <?php if(empty($clients)): ?>
-            <tr><td colspan="5" style="text-align:center;">No clients found. Add one above.</td></tr>
+            <tr><td colspan="4" style="text-align:center;">No clients found. Add one above.</td></tr>
           <?php endif; ?>
           <?php foreach($clients as $c): ?>
-          <tr>
-            <td class="mono">C-<?= htmlspecialchars($c['id']) ?></td>
-            <td class="bold"><?= htmlspecialchars($c['company_name']) ?></td>
-            <td><?= htmlspecialchars($c['contact_person']) ?></td>
-            <td><?= htmlspecialchars($c['mobile']) ?></td>
-            <td><span class="badge b-green">Active</span></td>
+          <tr style="border-top: 2px solid var(--gray-lighter);">
+            <td>
+              <div class="mono fs11 c-secondary mb4">C-<?= htmlspecialchars($c['id']) ?></div>
+              <div class="bold fs15"><?= htmlspecialchars($c['company_name']) ?></div>
+              <div class="fs11 c-secondary"><?= htmlspecialchars($c['gstin'] ?: 'No GSTIN') ?></div>
+            </td>
+            <td>
+              <div class="bold fs13"><?= htmlspecialchars($c['contact_person']) ?></div>
+              <div class="fs12 c-secondary"><?= htmlspecialchars($c['email']) ?></div>
+              <div class="fs12 bold"><?= htmlspecialchars($c['mobile']) ?></div>
+            </td>
+            <td>
+              <?php if(empty($c['sites'])): ?>
+                <span class="fs12 italic c-secondary">No sites registered</span>
+              <?php else: ?>
+                <div class="flex flex-col gap8">
+                  <?php foreach($c['sites'] as $s): ?>
+                    <div class="p8 border rounded flex justify-between items-center bg-light">
+                      <div class="flex flex-col">
+                        <span class="bold fs13"><?= htmlspecialchars($s['name']) ?></span>
+                        <span class="fs11 c-secondary"><?= htmlspecialchars($s['address']) ?></span>
+                      </div>
+                      <div class="badge b-gray fs10">ID: <?= $s['id'] ?></div>
+                    </div>
+                  <?php endforeach; ?>
+                </div>
+              <?php endif; ?>
+            </td>
+            <td class="text-right">
+              <button class="btn btn-sm btn-outline mb8" onclick="openAddSiteModal(<?= $c['id'] ?>)" style="width: 100%;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:4px;"><path d="M12 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+                Add Site
+              </button>
+            </td>
           </tr>
           <?php endforeach; ?>
         </tbody>
@@ -73,28 +108,45 @@
   <div class="modal-overlay" id="modal-add-site">
     <div class="modal">
       <div class="modal-head">
-        <div class="modal-title">Add New Site</div>
+        <div class="modal-title">Add New Operational Site</div>
         <button type="button" class="modal-close" onclick="closeModal('modal-add-site')">×</button>
       </div>
       <form method="POST" action="/sites/create">
-        <div class="form-grid mb16" style="display:block">
+        <div style="padding: 24px;">
           <div class="form-group mb16">
-            <label class="form-label">Select Client</label>
-            <select class="form-input" name="client_id" required>
+            <label class="form-label">Parent Client</label>
+            <select class="form-input" name="client_id" id="site-client-select" required>
               <option value="">-- Select Client --</option>
               <?php foreach($clients as $c): ?>
                 <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['company_name']) ?></option>
               <?php endforeach; ?>
             </select>
           </div>
-          <div class="form-group mb16"><label class="form-label">Site Name</label><input class="form-input" type="text" name="name" required placeholder="e.g. Block A"></div>
-          <div class="form-group mb16"><label class="form-label">Address</label><input class="form-input" type="text" name="address" placeholder="Site Address"></div>
+          <div class="form-group mb16">
+            <label class="form-label">Site Identifier (Name)</label>
+            <input class="form-input" type="text" name="name" required placeholder="e.g. Main Plant, Wing B">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Physical Location (Address)</label>
+            <input class="form-input" type="text" name="address" placeholder="Full address of this site">
+          </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-sm" onclick="closeModal('modal-add-site')">Cancel</button>
-          <button type="submit" class="btn btn-primary btn-sm">Save Site</button>
+          <button type="button" class="btn btn-sm" style="border:none; background:transparent;" onclick="closeModal('modal-add-site')">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm" style="padding: 10px 24px;">Deploy Site</button>
         </div>
       </form>
     </div>
   </div>
 </div>
+
+<script>
+function openAddSiteModal(clientId = null) {
+    if (clientId) {
+        document.getElementById('site-client-select').value = clientId;
+    } else {
+        document.getElementById('site-client-select').value = '';
+    }
+    openModal('modal-add-site');
+}
+</script>

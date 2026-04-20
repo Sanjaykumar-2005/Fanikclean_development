@@ -11,7 +11,12 @@ class Payroll {
             $stmt = $this->db->prepare("
                 SELECT w.id, w.category_id, w.daily_rate_override, wc.default_rate, 
                        rm.rate_per_day as client_rate,
-                       SUM(CASE WHEN a.status='p' THEN 1 WHEN a.status='h' THEN 0.5 WHEN a.status='off' THEN 1 ELSE 0 END) as days, 
+                       SUM(CASE 
+                            WHEN a.status='p' THEN 1 
+                            WHEN a.status='h' THEN 0.5 
+                            WHEN a.status='off' THEN 1 
+                            WHEN a.status='pl' THEN 1 
+                            WHEN a.status='sd' THEN 2 ELSE 0 END) as days, 
                        SUM(COALESCE(a.ot_hours, 0)) as ot_hrs
                 FROM workers w
                 JOIN worker_categories wc ON w.category_id = wc.id
@@ -59,26 +64,41 @@ class Payroll {
             return false;
         }
     }
-    public function getAll($siteId = null) {
+    public function getAll($siteIds = null, $month = null) {
         $query = "
-            SELECT p.*, w.full_name as name, wc.name as category_name
+            SELECT p.*, w.full_name as name, wc.name as category_name, s.name as site_name
             FROM payroll p
             JOIN workers w ON p.worker_id = w.id
             JOIN worker_categories wc ON w.category_id = wc.id
+            JOIN sites s ON w.site_id = s.id
+            WHERE 1=1
         ";
         
-        if ($siteId) {
-            $query .= " WHERE w.site_id = :sid ";
+        $params = [];
+        if ($month) {
+            $query .= " AND p.month_year = :month ";
+            $params['month'] = $month;
+        }
+
+        if (!empty($siteIds)) {
+            if (is_array($siteIds)) {
+                $placeholders = [];
+                foreach ($siteIds as $i => $id) {
+                    $key = "sid$i";
+                    $placeholders[] = ":$key";
+                    $params[$key] = $id;
+                }
+                $query .= " AND w.site_id IN (" . implode(',', $placeholders) . ") ";
+            } else {
+                $query .= " AND w.site_id = :sid ";
+                $params['sid'] = $siteIds;
+            }
         }
         
         $query .= " ORDER BY p.month_year DESC, w.full_name ASC";
         
         $stmt = $this->db->prepare($query);
-        if ($siteId) {
-            $stmt->execute(['sid' => $siteId]);
-        } else {
-            $stmt->execute();
-        }
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 }

@@ -5,14 +5,16 @@ class Billing {
     private $db;
     public function __construct() { $this->db = Database::connect(); }
 
-    public function generateMonthly($monthYear) {
+    public function generateMonthly($monthYear, $clientId = null) {
         $this->db->beginTransaction();
         try {
-            $stmt = $this->db->prepare("
+            $sql = "
                 SELECT c.id as client_id, s.id as site_id, c.company_name, 
                        SUM(CASE WHEN a.status = 'p' THEN 1 
                                 WHEN a.status = 'h' THEN 0.5 
-                                WHEN a.status = 'off' THEN 1 ELSE 0 END) as total_days,
+                                WHEN a.status = 'off' THEN 1
+                                WHEN a.status = 'pl' THEN 1
+                                WHEN a.status = 'sd' THEN 2 ELSE 0 END) as total_days,
                        wc.default_rate
                 FROM attendance a
                 JOIN workers w ON a.worker_id = w.id
@@ -20,9 +22,18 @@ class Billing {
                 JOIN sites s ON a.site_id = s.id
                 JOIN clients c ON s.client_id = c.id
                 WHERE TO_CHAR(a.attendance_date, 'YYYY-MM') = :my
-                GROUP BY c.id, s.id, c.company_name, wc.default_rate
-            ");
-            $stmt->execute(['my' => $monthYear]);
+            ";
+            
+            $params = ['my' => $monthYear];
+            if ($clientId) {
+                $sql .= " AND c.id = :cid ";
+                $params['cid'] = $clientId;
+            }
+            
+            $sql .= " GROUP BY c.id, s.id, c.company_name, wc.default_rate ";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute($params);
             $client_data = $stmt->fetchAll();
 
             $billing_map = [];

@@ -27,7 +27,7 @@ class Attendance {
                 $status = $recordData['status'] ?? '';
                 $ot = !empty($recordData['ot']) ? $recordData['ot'] : 0;
                 
-                if (in_array($status, ['p', 'a', 'h', 'off'])) {
+                if (in_array($status, ['p', 'a', 'h', 'off', 'pl', 'sd'])) {
                     $stmt->execute([
                         'wid' => $workerId, 'sid' => $siteId,
                         'dt' => $date, 'st' => $status, 'ot' => $ot, 'usr' => $userId

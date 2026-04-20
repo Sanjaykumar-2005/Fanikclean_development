@@ -27,4 +27,10 @@ class Client {
             'bc' => $data['billing_cycle']
         ]);
     }
+
+    public function getSitesByClientId($clientId) {
+        $stmt = $this->db->prepare("SELECT * FROM sites WHERE client_id = :cid ORDER BY name");
+        $stmt->execute(['cid' => $clientId]);
+        return $stmt->fetchAll();
+    }
 }

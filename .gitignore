@@ -9,6 +9,7 @@ node_modules/
 *.log
 error_log
 php_errors.log
+config/Database.php
 
 # IDE and OS specific files
 .idea/
@@ -18,8 +19,13 @@ php_errors.log
 .DS_Store
 Thumbs.db
 
-# Temp files
-*.swp
-*.swo
+# Temp and logs
+debug.log
 /tmp/
 test.txt
+*.swp
+*.swo
+
+# User Uploads
+uploads/workers/*
+!uploads/workers/.gitkeep

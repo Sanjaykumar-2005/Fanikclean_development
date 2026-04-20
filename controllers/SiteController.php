@@ -2,8 +2,10 @@
 require_once __DIR__ . '/../config/Database.php';
 
 class SiteController extends Controller {
+    public function __construct() {
+        $this->requireRole([1]);
+    }
     public function create() {
-        $this->checkAuth();
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $clientId = $_POST['client_id'] ?? null;
             $name = $_POST['name'] ?? '';

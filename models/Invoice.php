@@ -5,7 +5,7 @@ class Invoice {
     private $db;
     public function __construct() { $this->db = Database::connect(); }
 
-    public function getAllInvoices($siteId = null) {
+    public function getAllInvoices($siteIds = null) {
         $query = "
             SELECT i.invoice_no, i.issue_date, i.amount, i.status, c.company_name, b.month_year, s.name as site_name
             FROM invoices i
@@ -14,22 +14,26 @@ class Invoice {
             JOIN sites s ON b.site_id = s.id
         ";
         
-        if ($siteId) {
-            $query .= " WHERE b.site_id = :sid ";
+        $params = [];
+        if (!empty($siteIds)) {
+            if (is_array($siteIds)) {
+                $placeholders = implode(',', array_fill(0, count($siteIds), '?'));
+                $query .= " WHERE b.site_id IN ($placeholders) ";
+                $params = $siteIds;
+            } else {
+                $query .= " WHERE b.site_id = ? ";
+                $params = [$siteIds];
+            }
         }
         
         $query .= " ORDER BY i.id DESC";
         
         $stmt = $this->db->prepare($query);
-        if ($siteId) {
-            $stmt->execute(['sid' => $siteId]);
-        } else {
-            $stmt->execute();
-        }
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
-    public function getPendingBilling($siteId = null) {
+    public function getPendingBilling($siteIds = null) {
         $query = "
             SELECT b.*, c.company_name, s.name as site_name 
             FROM billing b 
@@ -38,20 +42,24 @@ class Invoice {
             WHERE b.status != 'Invoiced'
         ";
         
-        if ($siteId) {
-            $query .= " AND b.site_id = :sid ";
+        $params = [];
+        if (!empty($siteIds)) {
+            if (is_array($siteIds)) {
+                $placeholders = implode(',', array_fill(0, count($siteIds), '?'));
+                $query .= " AND b.site_id IN ($placeholders) ";
+                $params = $siteIds;
+            } else {
+                $query .= " AND b.site_id = ? ";
+                $params = [$siteIds];
+            }
         }
         
         $stmt = $this->db->prepare($query);
-        if ($siteId) {
-            $stmt->execute(['sid' => $siteId]);
-        } else {
-            $stmt->execute();
-        }
+        $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
-    public function generateFromBilling($billingId) {
+    public function generateFromBilling($billingId, $templateId = null) {
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare("SELECT grand_total FROM billing WHERE id = :bid");
@@ -63,15 +71,16 @@ class Invoice {
             $invNo = 'INV-' . date('ym') . '-' . rand(100, 999);
 
             $ins = $this->db->prepare("
-                INSERT INTO invoices (billing_id, invoice_no, issue_date, due_date, amount, status) 
-                VALUES (:bid, :inv, :iss, :due, :amt, 'Unpaid')
+                INSERT INTO invoices (billing_id, invoice_no, issue_date, due_date, amount, status, template_id) 
+                VALUES (:bid, :inv, :iss, :due, :amt, 'Unpaid', :tid)
             ");
             $ins->execute([
                 'bid' => $billingId,
                 'inv' => $invNo,
                 'iss' => date('Y-m-d'),
-                'due' => date('Y-m-d', strtotime('+15 days')), // Net 15
-                'amt' => $bill['grand_total']
+                'due' => date('Y-m-d', strtotime('+15 days')),
+                'amt' => $bill['grand_total'],
+                'tid' => $templateId
             ]);
 
             $upd = $this->db->prepare("UPDATE billing SET status = 'Invoiced' WHERE id = :bid");
@@ -87,10 +96,13 @@ class Invoice {
 
     public function getInvoiceDetails($invoiceNo) {
         $stmt = $this->db->prepare("
-            SELECT i.*, b.month_year, b.site_id, c.company_name, c.contact_person, c.address, c.gstin, c.id as client_id
+            SELECT i.*, b.month_year, b.site_id, c.company_name, c.contact_person, c.address, c.gstin, c.id as client_id,
+                   s.name as site_name, s.address as site_address, t.slug as template_slug
             FROM invoices i
             JOIN billing b ON i.billing_id = b.id
             JOIN clients c ON b.client_id = c.id
+            JOIN sites s ON b.site_id = s.id
+            LEFT JOIN invoice_templates t ON i.template_id = t.id
             WHERE i.invoice_no = :inv
         ");
         $stmt->execute(['inv' => $invoiceNo]);

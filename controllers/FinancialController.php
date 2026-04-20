@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../models/Financial.php';
 
 class FinancialController extends Controller {
-    public function __construct() { $this->checkAuth(); }
+    public function __construct() { $this->requireRole([1]); }
 
     public function index() {
         $model = new Financial();

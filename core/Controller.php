@@ -28,7 +28,29 @@ class Controller {
         return isset($_SESSION['role_id']) && $_SESSION['role_id'] == 1;
     }
 
+    protected function isManager() {
+        return isset($_SESSION['role_id']) && $_SESSION['role_id'] == 2;
+    }
+
+    protected function requireRole($allowedRoles) {
+        $this->checkAuth();
+        if (!in_array($_SESSION['role_id'], $allowedRoles)) {
+            $_SESSION['error'] = "Unauthorized access";
+            $this->redirect('/dashboard');
+        }
+    }
+
+    protected function getAssignedSiteIds() {
+        return $_SESSION['assigned_site_ids'] ?? [];
+    }
+
+    protected function canAccessSite($siteId) {
+        if ($this->isAdmin()) return true;
+        return in_array($siteId, $this->getAssignedSiteIds());
+    }
+
     protected function getSiteId() {
-        return $_SESSION['site_id'] ?? null;
+        // Deprecated: multi-site support uses getAssignedSiteIds()
+        return $_SESSION['assigned_site_ids'][0] ?? null;
     }
 }

@@ -3,15 +3,18 @@ require_once __DIR__ . '/../models/Client.php';
 
 class ClientController extends Controller {
     public function __construct() {
-        $this->checkAuth();
-        if (!$this->isAdmin()) {
-            $this->redirect('/dashboard');
-        }
+        $this->requireRole([1]);
     }
 
     public function index() {
         $clientModel = new Client();
         $clients = $clientModel->getAll();
+        
+        // Fetch sites for each client
+        foreach ($clients as &$c) {
+            $c['sites'] = $clientModel->getSitesByClientId($c['id']);
+        }
+
         $this->view('clients/index', [
             'pageTitle' => 'Clients & Sites',
             'clients' => $clients

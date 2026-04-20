@@ -12,12 +12,17 @@ $router->get('/dashboard', 'DashboardController', 'index');
 
 // Workers
 $router->get('/workers', 'WorkerController', 'index');
+$router->get('/workers/profile', 'WorkerController', 'profile');
 $router->post('/workers/create', 'WorkerController', 'create');
 $router->post('/workers/update', 'WorkerController', 'update');
+$router->post('/workers/assets/add', 'WorkerController', 'addAsset');
+$router->post('/workers/assets/delete', 'WorkerController', 'deleteAsset');
 
 // Users
 $router->get('/users', 'UserController', 'index');
 $router->post('/users/update', 'UserController', 'update');
+$router->get('/users/assignments', 'ManagerSiteController', 'index');
+$router->post('/users/assignments/save', 'ManagerSiteController', 'assign');
 
 // Clients
 $router->get('/clients', 'ClientController', 'index');
@@ -25,6 +30,9 @@ $router->post('/clients/create', 'ClientController', 'create');
 
 // Attendance
 $router->get('/attendance', 'AttendanceController', 'index');
+$router->get('/attendance/manager', 'AttendanceController', 'managerAttendance');
+$router->post('/attendance/manager/save', 'AttendanceController', 'saveManagerAttendance');
+$router->get('/attendance/my', 'AttendanceController', 'viewMyAttendance');
 $router->post('/attendance/save', 'AttendanceController', 'saveBulk');
 
 // Leave

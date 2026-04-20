@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../models/Leave.php';
 
 class LeaveController extends Controller {
-    public function __construct() { $this->checkAuth(); }
+    public function __construct() { $this->requireRole([1, 2]); }
     
     public function index() {
         $model = new Leave();

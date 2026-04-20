@@ -56,11 +56,19 @@ function openEditWorkerModal(w) {
     document.getElementById('worker-id').value = w.id;
     document.getElementById('worker-full_name').value = w.full_name;
     document.getElementById('worker-mobile').value = w.mobile;
-    document.getElementById('worker-aadhaar').value = w.aadhaar;
+    document.getElementById('worker-aadhaar').value = w.aadhaar || '';
     document.getElementById('worker-doj').value = w.doj;
     document.getElementById('worker-category_id').value = w.category_id;
     document.getElementById('worker-site_id').value = w.site_id || '';
     document.getElementById('worker-status').value = w.status;
+    
+    // New Fields
+    document.getElementById('worker-esi_number').value = w.esi_number || '';
+    document.getElementById('worker-pf_number').value = w.pf_number || '';
+    document.getElementById('worker-age').value = w.age || '';
+    document.getElementById('worker-experience').value = w.experience || '';
+    document.getElementById('worker-uniform_issue_date').value = w.uniform_issue_date || '';
+    document.getElementById('worker-uniform_details').value = w.uniform_details || '';
     
     openModal('modal-add-worker');
 }

@@ -113,9 +113,9 @@ $monthTitle = strtoupper(date('F Y', strtotime($dateStr)));
     <!-- Details -->
     <div class="to-section">
         <p>To</p>
-        <p><?= htmlspecialchars($company_name) ?> (<?= htmlspecialchars($site_name) ?>)</p>
+        <p><?= htmlspecialchars($company_name) ?><?= !empty($contact_person) ? ', ' . htmlspecialchars($contact_person) : '' ?></p>
         <p>GSTIN: <span class="red-text"><?= htmlspecialchars($gstin) ?></span></p>
-        <p style="font-weight: normal; max-width: 50%"><?= nl2br(htmlspecialchars($site_address)) ?></p>
+        <p style="font-weight: normal; max-width: 50%"><?= nl2br(htmlspecialchars($address)) ?></p>
     </div>
 
     <!-- State mapping trick -->

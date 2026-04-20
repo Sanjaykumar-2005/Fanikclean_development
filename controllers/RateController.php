@@ -2,7 +2,7 @@
 require_once __DIR__ . '/../config/Database.php';
 
 class RateController extends Controller {
-    public function __construct() { $this->checkAuth(); }
+    public function __construct() { $this->requireRole([1]); }
 
     public function index() {
         $db = Database::connect();

@@ -3,10 +3,7 @@ require_once __DIR__ . '/../models/User.php';
 
 class UserController extends Controller {
     public function __construct() {
-        $this->checkAuth();
-        if (!$this->isAdmin()) {
-            $this->redirect('/dashboard');
-        }
+        $this->requireRole([1]);
     }
 
     public function index() {

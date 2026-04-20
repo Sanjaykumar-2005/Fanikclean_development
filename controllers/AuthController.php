@@ -21,8 +21,11 @@ class AuthController extends Controller {
         if ($user && password_verify($password, $user['password_hash'])) {
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['role_id'] = $user['role_id'];
-            $_SESSION['site_id'] = $user['site_id']; // For Manager restriction
             $_SESSION['user_name'] = $user['full_name'];
+            
+            // Load assigned site IDs for multi-site managers
+            $_SESSION['assigned_site_ids'] = $userModel->getAssignedSiteIds($user['id']);
+            
             $this->redirect('/dashboard');
         } else {
             $_SESSION['error'] = "Invalid credentials";

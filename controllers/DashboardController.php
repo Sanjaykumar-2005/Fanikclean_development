@@ -3,7 +3,7 @@ require_once __DIR__ . '/../models/Dashboard.php';
 
 class DashboardController extends Controller {
     public function __construct() {
-        $this->checkAuth();
+        $this->requireRole([1, 2]);
     }
 
     public function index() {

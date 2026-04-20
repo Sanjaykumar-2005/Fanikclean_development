@@ -60,6 +60,9 @@
 <script>
 function loadWorkers() {
     var siteId = document.getElementById('site_select').value;
+    var attDate = document.querySelector('input[name="attendance_date"]').value;
+    var month = attDate ? attDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
+    
     var tbody = document.getElementById('worker_tbody');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px;">Loading workers...</td></tr>';
     
@@ -68,7 +71,7 @@ function loadWorkers() {
         return;
     }
 
-    fetch('/api/workers?site_id=' + siteId)
+    fetch('/api/workers?site_id=' + siteId + '&month=' + month)
     .then(res => res.json())
     .then(data => {
         if(data.length === 0) {
@@ -83,11 +86,17 @@ function loadWorkers() {
             html += '  <div class="fs11 c-secondary">' + w.worker_code + ' | ' + (w.category_name || 'General') + '</div>';
             html += '</td>';
             html += '<td>';
-            html += '  <select class="form-input" name="attendance['+w.id+'][status]" style="width:130px;">';
+            html += '  <select class="form-input" name="attendance['+w.id+'][status]" style="width:145px;">';
             html += '    <option value="p" selected>Present (P)</option>';
-            html += '    <option value="a">Absent (A)</option>';
+            html += '    <option value="off">Off Duty (Off)</option>';
             html += '    <option value="h">Half-Day (H)</option>';
-            html += '    <option value="off">Weekly Off (Off)</option>';
+            
+            // Only show PL if count < 4
+            if (parseInt(w.pl_count) < 4) {
+               html += '    <option value="pl">Paid Leave (PL)</option>';
+            }
+            
+            html += '    <option value="sd">Special Duty (SD)</option>';
             html += '  </select>';
             html += '</td>';
             html += '<td>';

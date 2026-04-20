@@ -3,55 +3,91 @@ require_once __DIR__ . '/../models/Payroll.php';
 
 class PayrollController extends Controller {
     public function __construct() {
-        $this->checkAuth();
+        $this->requireRole([1, 2]);
     }
 
     public function index() {
         $payrollModel = new Payroll();
-        $siteId = $this->isAdmin() ? null : $this->getSiteId();
-        $payrolls = $payrollModel->getAll($siteId);
+        
+        $month = $_GET['month'] ?? date('Y-m');
+        $siteId = $_GET['site_id'] ?? null;
+        
+        $siteScope = $this->isAdmin() ? ($siteId ?: null) : ($siteId ?: $this->getAssignedSiteIds());
+        
+        // Final sanity check for managers
+        if (!$this->isAdmin() && $siteId && !$this->canAccessSite($siteId)) {
+            $siteScope = $this->getAssignedSiteIds();
+            $_SESSION['error'] = "Unauthorized site selection";
+        }
+
+        $payrolls = $payrollModel->getAll($siteScope, $month);
+        
+        $db = Database::connect();
+        $sites = $this->isAdmin() ? 
+                 $db->query("SELECT id, name FROM sites ORDER BY name")->fetchAll() : 
+                 $db->query("SELECT id, name FROM sites WHERE id IN (".implode(',',$this->getAssignedSiteIds()).") ORDER BY name")->fetchAll();
 
         $this->view('payroll/index', [
-            'pageTitle' => 'Payroll Processing',
-            'payrolls' => $payrolls
+            'pageTitle' => 'Payroll Center',
+            'payrolls' => $payrolls,
+            'sites' => $sites,
+            'selectedMonth' => $month,
+            'selectedSiteId' => $siteId
         ]);
     }
 
     public function export() {
+        $month = $_GET['month'] ?? date('Y-m');
+        $siteId = $_GET['site_id'] ?? null;
+        
+        $siteScope = $this->isAdmin() ? ($siteId ?: null) : ($siteId ?: $this->getAssignedSiteIds());
+        
         $payrollModel = new Payroll();
-        $siteId = $this->isAdmin() ? null : $this->getSiteId();
-        $payrolls = $payrollModel->getAll($siteId);
+        $payrolls = $payrollModel->getAll($siteScope, $month);
 
         if (ob_get_level()) ob_end_clean();
 
-        header("Content-Type: application/vnd.ms-excel");
-        header("Content-Disposition: attachment; filename=payroll.xls");
+        $filename = "Fanikclean_Payroll_" . ($month) . ".xls";
+        header("Content-Type: application/vnd.ms-excel; charset=UTF-8");
+        header("Content-Disposition: attachment; filename=\"$filename\"");
+        header("Pragma: no-cache");
+        header("Expires: 0");
 
-        echo "Worker Name\tCategory\tMonth-Year\tDays Worked\tBasic Pay\tOT Pay\tAdvance\tNet Pay\tStatus\r\n";
+        // Simple but effective HTML Table for "True Excel" experience
+        echo '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">';
+        echo '<head><meta http-equiv="Content-Type" content="text/html; charset=utf-8" /><style>td { border: 0.5pt solid #ccc; }</style></head><body>';
+        echo '<table>';
+        echo '<tr><th colspan="9" style="font-size:18px; height:30px;">FANIKCLEAN SERVICES - PAYROLL REPORT (' . $month . ')</th></tr>';
+        echo '<tr style="background:#f2f2f2; font-weight:bold;">';
+        echo '<th>Worker Name</th><th>Category</th><th>Site</th><th>Month-Year</th><th>Days</th><th>Basic Pay</th><th>OT Pay</th><th>Advance</th><th>Net Salary</th>';
+        echo '</tr>';
 
         foreach ($payrolls as $p) {
-            echo $p['name'] . "\t" . 
-                 $p['category_name'] . "\t" . 
-                 $p['month_year'] . "\t" . 
-                 $p['days_worked'] . "\t" . 
-                 $p['basic_pay'] . "\t" . 
-                 $p['ot_pay'] . "\t" . 
-                 $p['advance_deduction'] . "\t" . 
-                 $p['net_pay'] . "\t" . 
-                 $p['status'] . "\r\n";
+            echo '<tr>';
+            echo '<td>' . htmlspecialchars($p['name']) . '</td>';
+            echo '<td>' . htmlspecialchars($p['category_name']) . '</td>';
+            echo '<td>' . htmlspecialchars($p['site_name']) . '</td>';
+            echo '<td>' . htmlspecialchars($p['month_year']) . '</td>';
+            echo '<td>' . number_format($p['days_worked'], 1) . '</td>';
+            echo '<td>' . number_format($p['basic_pay'], 2) . '</td>';
+            echo '<td>' . number_format($p['ot_pay'], 2) . '</td>';
+            echo '<td>' . number_format($p['advance_deduction'], 2) . '</td>';
+            echo '<td style="font-weight:bold;">' . number_format($p['net_pay'], 2) . '</td>';
+            echo '</tr>';
         }
+        echo '</table></body></html>';
         exit;
     }
 
     public function approve() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $monthYear = $_POST['month_year'] ?? date('Y-m'); // format 2026-03
+            $monthYear = $_POST['month_year'] ?? date('Y-m');
             
             $payrollModel = new Payroll();
             $payrollModel->generateMonthly($monthYear);
 
-            $_SESSION['toast'] = "Payroll computed & approved for $monthYear";
-            $this->redirect('/payroll');
+            $_SESSION['toast'] = "Payroll computed & archived for $monthYear";
+            $this->redirect('/payroll?month=' . $monthYear);
         }
     }
 }

@@ -3,18 +3,18 @@ require_once __DIR__ . '/../models/Invoice.php';
 
 class InvoiceController extends Controller {
     public function __construct() { 
-        $this->checkAuth(); 
+        $this->requireRole([1, 2]); 
     }
 
     public function index() {
         $invModel = new Invoice();
-        $siteId = $this->isAdmin() ? null : $this->getSiteId();
+        $siteScope = $this->isAdmin() ? null : $this->getAssignedSiteIds();
         
-        $pendingBills = $invModel->getPendingBilling($siteId);
-        $invoices = $invModel->getAllInvoices($siteId);
+        $pendingBills = $invModel->getPendingBilling($siteScope);
+        $invoices = $invModel->getAllInvoices($siteScope);
 
         $this->view('invoices/index', [
-            'pageTitle' => 'Invoice Generation',
+            'pageTitle' => 'Financial: Billing & Invoicing',
             'pendingBills' => $pendingBills,
             'invoices' => $invoices
         ]);
@@ -39,7 +39,7 @@ class InvoiceController extends Controller {
                 $db = Database::connect();
                 $stmt = $db->prepare("UPDATE invoices SET status = 'Paid', payment_date = CURRENT_DATE WHERE invoice_no = :inv");
                 $stmt->execute(['inv' => $invoice_no]);
-                $_SESSION['toast'] = "Invoice Marked as Paid!";
+                $_SESSION['toast'] = "Invoice Status Updated: Paid";
             }
             $this->redirect('/invoices');
         }
@@ -47,17 +47,17 @@ class InvoiceController extends Controller {
 
     public function print() {
         $invoiceNo = $_GET['inv'] ?? null;
-        if (!$invoiceNo) { $this->redirect('/invoices'); }
+        if (!$invoiceNo) { $this->redirect('/invoices'); return; }
 
         $invModel = new Invoice();
         $invoice = $invModel->getInvoiceDetails($invoiceNo);
 
         if (!$invoice) {
-            $_SESSION['toast'] = "Invoice not found";
+            $_SESSION['error'] = "Document retrieval failed: Record not found";
             $this->redirect('/invoices');
+            return;
         }
 
-        // Render WITHOUT layout, standalone print view
         extract($invoice);
         require __DIR__ . '/../views/invoices/print.php';
     }
