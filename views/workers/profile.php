@@ -11,7 +11,7 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         Edit Information
       </button>
-      <button class="btn btn-primary btn-sm">
+      <button class="btn btn-primary btn-sm" onclick="window.print()">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
         Export PDF
       </button>
@@ -190,5 +190,55 @@
 }
 .profile-photo-wrap:hover {
   transform: scale(1.05);
+}
+
+@media print {
+  /* Hide navigation and unnecessary UI elements */
+  .sidebar, .topbar, .sec-head, .modal-overlay, #toast, .btn {
+    display: none !important;
+  }
+  
+  /* Reset layout for the printed page */
+  body, .app, .main, .content {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* Make sure the main grid expands to full width */
+  .grid-cols-12 {
+    display: block !important;
+  }
+  
+  .col-span-12 {
+    width: 100% !important;
+    margin-bottom: 24px !important;
+  }
+  
+  /* Remove box shadows and borders for a cleaner look */
+  .card {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 10px 0 !important;
+  }
+  
+  /* Hardcode some colors to force them to print (some browsers ignore background colors without this) */
+  .b-green { border: 1px solid #10b981; color: #10b981; }
+  .b-red { border: 1px solid #ef4444; color: #ef4444; }
+  .b-indigo { border: 1px solid #6366f1; color: #6366f1; }
+  
+  /* Hide the "Delete" column in the Asset Tracking table */
+  table th:last-child, table td:last-child {
+    display: none !important;
+  }
+
+  /* Ensure the printed document has a nice margin */
+  @page {
+    margin: 2cm;
+    size: A4 portrait;
+  }
 }
 </style>
