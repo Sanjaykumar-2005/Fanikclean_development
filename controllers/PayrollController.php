@@ -11,6 +11,7 @@ class PayrollController extends Controller {
         
         $month = $_GET['month'] ?? date('Y-m');
         $siteId = $_GET['site_id'] ?? null;
+        $clientId = $_GET['client_id'] ?? null;
         
         $siteScope = $this->isAdmin() ? ($siteId ?: null) : ($siteId ?: $this->getAssignedSiteIds());
         
@@ -20,30 +21,46 @@ class PayrollController extends Controller {
             $_SESSION['error'] = "Unauthorized site selection";
         }
 
-        $payrolls = $payrollModel->getAll($siteScope, $month);
+        $payrolls = $payrollModel->getAll($siteScope, $month, $clientId);
         
         $db = Database::connect();
-        $sites = $this->isAdmin() ? 
-                 $db->query("SELECT id, name FROM sites ORDER BY name")->fetchAll() : 
-                 $db->query("SELECT id, name FROM sites WHERE id IN (".implode(',',$this->getAssignedSiteIds()).") ORDER BY name")->fetchAll();
+        
+        $clients = $db->query("SELECT id, company_name FROM clients ORDER BY company_name")->fetchAll();
+
+        if ($this->isAdmin()) {
+            $sites = $db->query("SELECT id, name, client_id FROM sites ORDER BY name")->fetchAll();
+        } else {
+            $assignedIds = $this->getAssignedSiteIds();
+            if (!empty($assignedIds)) {
+                $placeholders = implode(',', array_fill(0, count($assignedIds), '?'));
+                $stmt = $db->prepare("SELECT id, name, client_id FROM sites WHERE id IN ($placeholders) ORDER BY name");
+                $stmt->execute($assignedIds);
+                $sites = $stmt->fetchAll();
+            } else {
+                $sites = [];
+            }
+        }
 
         $this->view('payroll/index', [
             'pageTitle' => 'Payroll Center',
             'payrolls' => $payrolls,
             'sites' => $sites,
+            'clients' => $clients,
             'selectedMonth' => $month,
-            'selectedSiteId' => $siteId
+            'selectedSiteId' => $siteId,
+            'selectedClientId' => $clientId
         ]);
     }
 
     public function export() {
         $month = $_GET['month'] ?? date('Y-m');
         $siteId = $_GET['site_id'] ?? null;
+        $clientId = $_GET['client_id'] ?? null;
         
         $siteScope = $this->isAdmin() ? ($siteId ?: null) : ($siteId ?: $this->getAssignedSiteIds());
         
         $payrollModel = new Payroll();
-        $payrolls = $payrollModel->getAll($siteScope, $month);
+        $payrolls = $payrollModel->getAll($siteScope, $month, $clientId);
 
         if (ob_get_level()) ob_end_clean();
 

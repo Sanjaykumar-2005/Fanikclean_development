@@ -5,7 +5,7 @@ class Billing {
     private $db;
     public function __construct() { $this->db = Database::connect(); }
 
-    public function generateMonthly($monthYear, $clientId = null) {
+    public function generateForDateRange($fromDate, $toDate, $clientId = null, $siteId = null) {
         $this->db->beginTransaction();
         try {
             $sql = "
@@ -21,13 +21,17 @@ class Billing {
                 JOIN worker_categories wc ON w.category_id = wc.id
                 JOIN sites s ON a.site_id = s.id
                 JOIN clients c ON s.client_id = c.id
-                WHERE TO_CHAR(a.attendance_date, 'YYYY-MM') = :my
+                WHERE a.attendance_date BETWEEN :from_date AND :to_date
             ";
             
-            $params = ['my' => $monthYear];
+            $params = ['from_date' => $fromDate, 'to_date' => $toDate];
             if ($clientId) {
                 $sql .= " AND c.id = :cid ";
                 $params['cid'] = $clientId;
+            }
+            if ($siteId) {
+                $sql .= " AND s.id = :sid ";
+                $params['sid'] = $siteId;
             }
             
             $sql .= " GROUP BY c.id, s.id, c.company_name, wc.default_rate ";
@@ -35,6 +39,9 @@ class Billing {
             $stmt = $this->db->prepare($sql);
             $stmt->execute($params);
             $client_data = $stmt->fetchAll();
+
+            // Build a month_year label for backward compatibility
+            $monthYear = date('Y-m', strtotime($fromDate));
 
             $billing_map = [];
             foreach ($client_data as $row) {
@@ -56,13 +63,14 @@ class Billing {
                 $grand = $subtotal + $cgst + $sgst;
 
                 $ins = $this->db->prepare("
-                    INSERT INTO billing (client_id, site_id, month_year, subtotal, cgst, sgst, grand_total, status)
-                    VALUES (:cid, :sid, :my, :sub, :cg, :sg, :gt, 'Pending')
-                    ON CONFLICT (client_id, site_id, month_year) DO UPDATE 
-                    SET subtotal=EXCLUDED.subtotal, cgst=EXCLUDED.cgst, sgst=EXCLUDED.sgst, grand_total=EXCLUDED.grand_total
+                    INSERT INTO billing (client_id, site_id, month_year, from_date, to_date, subtotal, cgst, sgst, grand_total, status)
+                    VALUES (:cid, :sid, :my, :fd, :td, :sub, :cg, :sg, :gt, 'Pending')
+                    ON CONFLICT (client_id, site_id, from_date, to_date) DO UPDATE 
+                    SET subtotal=EXCLUDED.subtotal, cgst=EXCLUDED.cgst, sgst=EXCLUDED.sgst, grand_total=EXCLUDED.grand_total, month_year=EXCLUDED.month_year
                 ");
                 $ins->execute([
                     'cid' => $bdata['client_id'], 'sid' => $bdata['site_id'], 'my' => $monthYear,
+                    'fd' => $fromDate, 'td' => $toDate,
                     'sub' => $subtotal, 'cg' => $cgst, 'sg' => $sgst, 'gt' => $grand
                 ]);
             }

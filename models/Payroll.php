@@ -64,9 +64,9 @@ class Payroll {
             return false;
         }
     }
-    public function getAll($siteIds = null, $month = null) {
+    public function getAll($siteIds = null, $month = null, $clientId = null) {
         $query = "
-            SELECT p.*, w.full_name as name, wc.name as category_name, s.name as site_name
+            SELECT p.*, w.full_name as name, wc.name as category_name, s.name as site_name, s.client_id
             FROM payroll p
             JOIN workers w ON p.worker_id = w.id
             JOIN worker_categories wc ON w.category_id = wc.id
@@ -78,6 +78,11 @@ class Payroll {
         if ($month) {
             $query .= " AND p.month_year = :month ";
             $params['month'] = $month;
+        }
+
+        if ($clientId) {
+            $query .= " AND s.client_id = :cid ";
+            $params['cid'] = $clientId;
         }
 
         if (!empty($siteIds)) {

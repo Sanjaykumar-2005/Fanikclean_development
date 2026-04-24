@@ -15,12 +15,21 @@
               <label class="form-label">Review Month</label>
               <input type="month" name="month" class="form-input" value="<?= $selectedMonth ?>" onchange="this.form.submit()">
           </div>
+          <div class="form-group" style="width: 200px;">
+              <label class="form-label">Filter by Client</label>
+              <select name="client_id" id="payroll-client" class="form-input" onchange="filterPayrollSites(); this.form.submit()">
+                  <option value="">-- All Clients --</option>
+                  <?php foreach($clients as $c): ?>
+                    <option value="<?= $c['id'] ?>" <?= $selectedClientId == $c['id'] ? 'selected' : '' ?>><?= htmlspecialchars($c['company_name']) ?></option>
+                  <?php endforeach; ?>
+              </select>
+          </div>
           <div class="form-group" style="width: 220px;">
               <label class="form-label">Filter by Site</label>
-              <select name="site_id" class="form-input" onchange="this.form.submit()">
+              <select name="site_id" id="payroll-site" class="form-input" onchange="this.form.submit()">
                   <option value="">-- All Accessible Sites --</option>
                   <?php foreach($sites as $s): ?>
-                    <option value="<?= $s['id'] ?>" <?= $selectedSiteId == $s['id'] ? 'selected' : '' ?>><?= htmlspecialchars($s['name']) ?></option>
+                    <option value="<?= $s['id'] ?>" data-client-id="<?= $s['client_id'] ?>" <?= $selectedSiteId == $s['id'] ? 'selected' : '' ?>><?= htmlspecialchars($s['name']) ?></option>
                   <?php endforeach; ?>
               </select>
           </div>
@@ -68,7 +77,7 @@
   <div class="card">
     <div class="card-head">
       <div class="card-title">Payroll Registry: <?= date('F Y', strtotime($selectedMonth)) ?></div>
-      <a href="/payroll/export?month=<?= $selectedMonth ?>&site_id=<?= $selectedSiteId ?>" class="btn btn-sm btn-outline">
+      <a href="/payroll/export?month=<?= $selectedMonth ?>&site_id=<?= $selectedSiteId ?>&client_id=<?= $selectedClientId ?>" class="btn btn-sm btn-outline">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M10 9h1"/></svg>
         Download Excel
       </a>
@@ -122,3 +131,29 @@
     </div>
   </div>
 </div>
+
+<script>
+function filterPayrollSites() {
+    const clientId = document.getElementById('payroll-client').value;
+    const siteSelect = document.getElementById('payroll-site');
+    const options = siteSelect.querySelectorAll('option');
+    
+    options.forEach(opt => {
+        if (!opt.value) { opt.style.display = ''; return; }
+        if (!clientId || opt.getAttribute('data-client-id') === clientId) {
+            opt.style.display = '';
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+    
+    // Automatically reset site selection if the selected site doesn't match the new client
+    const selected = siteSelect.options[siteSelect.selectedIndex];
+    if (selected && selected.style.display === 'none') {
+        siteSelect.value = '';
+    }
+}
+
+// Initial filter application on page load
+document.addEventListener('DOMContentLoaded', filterPayrollSites);
+</script>

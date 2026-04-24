@@ -17,6 +17,8 @@ $router->post('/workers/create', 'WorkerController', 'create');
 $router->post('/workers/update', 'WorkerController', 'update');
 $router->post('/workers/assets/add', 'WorkerController', 'addAsset');
 $router->post('/workers/assets/delete', 'WorkerController', 'deleteAsset');
+$router->post('/workers/bulk/transfer', 'WorkerController', 'bulkTransfer');
+$router->post('/workers/bulk/uniform', 'WorkerController', 'bulkUniform');
 
 // Users
 $router->get('/users', 'UserController', 'index');

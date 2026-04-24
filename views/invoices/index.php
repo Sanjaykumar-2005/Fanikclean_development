@@ -23,7 +23,7 @@
                     <?php foreach($pendingBills as $b): ?>
                     <tr>
                         <td class="bold"><?= htmlspecialchars($b['company_name']) ?></td>
-                        <td><span class="chip"><?= htmlspecialchars($b['month_year']) ?></span></td>
+                        <td><span class="chip"><?= !empty($b['from_date']) ? date('d M', strtotime($b['from_date'])) . ' – ' . date('d M Y', strtotime($b['to_date'])) : htmlspecialchars($b['month_year']) ?></span></td>
                         <td class="mono">₹<?= number_format($b['subtotal'], 2) ?></td>
                         <td class="bold c-teal">₹<?= number_format($b['grand_total'], 2) ?></td>
                         <td class="text-right">

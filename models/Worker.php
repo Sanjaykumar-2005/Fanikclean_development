@@ -129,4 +129,26 @@ class Worker {
         $stmt = $this->db->prepare($sql);
         return $stmt->execute($params);
     }
+
+    public function bulkUpdateSite($workerIds, $siteId) {
+        if (empty($workerIds) || !is_array($workerIds)) return false;
+        
+        $placeholders = implode(',', array_fill(0, count($workerIds), '?'));
+        
+        $stmt = $this->db->prepare("UPDATE workers SET site_id = ? WHERE id IN ($placeholders)");
+        $params = array_merge([$siteId], $workerIds);
+        
+        return $stmt->execute($params);
+    }
+
+    public function bulkUpdateUniform($workerIds, $details, $issueDate) {
+        if (empty($workerIds) || !is_array($workerIds)) return false;
+        
+        $placeholders = implode(',', array_fill(0, count($workerIds), '?'));
+        
+        $stmt = $this->db->prepare("UPDATE workers SET uniform_details = ?, uniform_issue_date = ? WHERE id IN ($placeholders)");
+        $params = array_merge([$details, $issueDate], $workerIds);
+        
+        return $stmt->execute($params);
+    }
 }

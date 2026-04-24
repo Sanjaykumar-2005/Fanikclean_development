@@ -150,14 +150,16 @@ CREATE TABLE billing (
     id SERIAL PRIMARY KEY,
     client_id INT REFERENCES clients(id) ON DELETE CASCADE,
     site_id INT REFERENCES sites(id) ON DELETE CASCADE,
-    month_year VARCHAR(7) NOT NULL, 
+    month_year VARCHAR(7), 
+    from_date DATE NOT NULL,
+    to_date DATE NOT NULL,
     subtotal NUMERIC(12, 2) NOT NULL,
     cgst NUMERIC(12, 2) NOT NULL,
     sgst NUMERIC(12, 2) NOT NULL,
     grand_total NUMERIC(12, 2) NOT NULL,
     status VARCHAR(20) DEFAULT 'Pending' CHECK (status IN ('Pending', 'Approved', 'Invoiced')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(client_id, site_id, month_year)
+    UNIQUE(client_id, site_id, from_date, to_date)
 );
 
 CREATE TABLE invoice_templates (

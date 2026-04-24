@@ -13,13 +13,15 @@ class WorkerController extends Controller {
         $siteScope = $this->isAdmin() ? null : $this->getAssignedSiteIds();
         $workers = $workerModel->getAll($siteScope);
         
+        $clients = $db->query("SELECT id, company_name FROM clients WHERE status = 'Active' ORDER BY company_name")->fetchAll();
         $categories = $db->query("SELECT id, name FROM worker_categories ORDER BY id")->fetchAll();
-        $sites = $db->query("SELECT id, name FROM sites ORDER BY name")->fetchAll();
+        $sites = $db->query("SELECT id, name, client_id FROM sites ORDER BY name")->fetchAll();
 
         $this->view('workers/index', [
             'workers' => $workers,
             'categories' => $categories,
-            'sites' => $sites
+            'sites' => $sites,
+            'clients' => $clients
         ]);
     }
 
@@ -173,6 +175,45 @@ class WorkerController extends Controller {
             }
         }
         return null;
+    }
+
+    public function bulkTransfer() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $workerIds = $_POST['worker_ids'] ?? [];
+            $siteId = $_POST['site_id'] ?? null;
+            
+            if (!empty($workerIds) && !empty($siteId)) {
+                $workerModel = new Worker();
+                if ($workerModel->bulkUpdateSite($workerIds, $siteId)) {
+                    $_SESSION['toast'] = "Successfully transferred " . count($workerIds) . " workers.";
+                } else {
+                    $_SESSION['error'] = "Failed to transfer workers.";
+                }
+            } else {
+                $_SESSION['error'] = "Invalid selection or destination site.";
+            }
+            $this->redirect('/workers');
+        }
+    }
+
+    public function bulkUniform() {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            $workerIds = $_POST['worker_ids'] ?? [];
+            $details = $_POST['uniform_details'] ?? '';
+            $issueDate = $_POST['uniform_issue_date'] ?? date('Y-m-d');
+            
+            if (!empty($workerIds)) {
+                $workerModel = new Worker();
+                if ($workerModel->bulkUpdateUniform($workerIds, $details, $issueDate)) {
+                    $_SESSION['toast'] = "Uniform updated for " . count($workerIds) . " workers.";
+                } else {
+                    $_SESSION['error'] = "Failed to update uniforms.";
+                }
+            } else {
+                $_SESSION['error'] = "No workers selected.";
+            }
+            $this->redirect('/workers');
+        }
     }
 }
 

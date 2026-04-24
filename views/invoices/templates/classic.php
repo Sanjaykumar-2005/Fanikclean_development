@@ -37,9 +37,13 @@ function numberToWords($num) {
     return $res;
 }
 
-// Convert month string "2026-03" to "MARCH 2026"
-$dateStr = $month_year . '-01';
-$monthTitle = strtoupper(date('F Y', strtotime($dateStr)));
+// Build period title from date range or legacy month_year
+if (!empty($from_date) && !empty($to_date)) {
+    $monthTitle = strtoupper(date('d M Y', strtotime($from_date)) . ' TO ' . date('d M Y', strtotime($to_date)));
+} else {
+    $dateStr = $month_year . '-01';
+    $monthTitle = strtoupper(date('F Y', strtotime($dateStr)));
+}
 
 ?>
 <!DOCTYPE html>
@@ -99,7 +103,7 @@ $monthTitle = strtoupper(date('F Y', strtotime($dateStr)));
     <!-- Header -->
     <div class="header-row">
         <div style="flex: 1;"></div>
-        <div class="header-title" style="flex: 2; align-self: flex-end; padding-bottom:10px;"><?= $monthTitle ?> MONTH TAX INVOICE</div>
+        <div class="header-title" style="flex: 2; align-self: flex-end; padding-bottom:10px;"><?= $monthTitle ?> TAX INVOICE</div>
         <div class="header-meta" style="flex: 1;">
             <div style="display:grid; grid-template-columns: 90px 1fr;">
                 <span>GSTIN:</span><span class="red-text">33AADCF8629A1ZY</span>

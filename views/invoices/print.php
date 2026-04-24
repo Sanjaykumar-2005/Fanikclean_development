@@ -37,9 +37,13 @@ function numberToWords($num) {
     return $res;
 }
 
-// Convert month string "2026-03" to "MARCH 2026"
-$dateStr = $month_year . '-01';
-$monthTitle = strtoupper(date('F Y', strtotime($dateStr)));
+// Build period title from date range or legacy month_year
+if (!empty($from_date) && !empty($to_date)) {
+    $monthTitle = strtoupper(date('d M Y', strtotime($from_date)) . ' TO ' . date('d M Y', strtotime($to_date)));
+} else {
+    $dateStr = $month_year . '-01';
+    $monthTitle = strtoupper(date('F Y', strtotime($dateStr)));
+}
 
 ?>
 <!DOCTYPE html>

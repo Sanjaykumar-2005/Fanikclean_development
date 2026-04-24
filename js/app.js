@@ -44,6 +44,11 @@ function openAddWorkerModal() {
     form.action = '/workers/create';
     document.getElementById('worker-id').value = '';
     document.getElementById('worker-modal-title').textContent = 'Add New Worker';
+    
+    const clientSelect = document.getElementById('worker-client_id');
+    if (clientSelect) clientSelect.value = '';
+    if (typeof filterSitesByClient === 'function') filterSitesByClient();
+    
     openModal('modal-add-worker');
 }
 
@@ -59,7 +64,6 @@ function openEditWorkerModal(w) {
     document.getElementById('worker-aadhaar').value = w.aadhaar || '';
     document.getElementById('worker-doj').value = w.doj;
     document.getElementById('worker-category_id').value = w.category_id;
-    document.getElementById('worker-site_id').value = w.site_id || '';
     document.getElementById('worker-status').value = w.status;
     
     // New Fields
@@ -69,6 +73,27 @@ function openEditWorkerModal(w) {
     document.getElementById('worker-experience').value = w.experience || '';
     document.getElementById('worker-uniform_issue_date').value = w.uniform_issue_date || '';
     document.getElementById('worker-uniform_details').value = w.uniform_details || '';
+    
+    // Handle Client & Site Relationship
+    const siteSelect = document.getElementById('worker-site_id');
+    const clientSelect = document.getElementById('worker-client_id');
+    
+    if (w.site_id && siteSelect && clientSelect) {
+        const option = siteSelect.querySelector(`option[value="${w.site_id}"]`);
+        if (option) {
+            clientSelect.value = option.getAttribute('data-client-id') || '';
+        }
+    } else if (clientSelect) {
+        clientSelect.value = '';
+    }
+    
+    if (typeof filterSitesByClient === 'function') {
+        filterSitesByClient();
+    }
+    
+    if (siteSelect) {
+        siteSelect.value = w.site_id || '';
+    }
     
     openModal('modal-add-worker');
 }

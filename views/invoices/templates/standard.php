@@ -59,7 +59,7 @@
             <div class="address-box">
                 <strong><?= htmlspecialchars($site_name) ?></strong><br>
                 <?= nl2br(htmlspecialchars($site_address)) ?><br>
-                <strong>Period:</strong> <?= date('F Y', strtotime($month_year)) ?>
+                <strong>Period:</strong> <?= !empty($from_date) ? date('d M Y', strtotime($from_date)) . ' – ' . date('d M Y', strtotime($to_date)) : date('F Y', strtotime($month_year)) ?>
             </div>
         </div>
     </div>

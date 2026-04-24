@@ -72,7 +72,7 @@
                     <h4>Service Operations</h4>
                     <p><strong><?= htmlspecialchars($site_name) ?></strong></p>
                     <p><?= nl2br(htmlspecialchars($site_address)) ?></p>
-                    <p>Billing Cycle: <?= date('F Y', strtotime($month_year)) ?></p>
+                    <p>Billing Period: <?= !empty($from_date) ? date('d M Y', strtotime($from_date)) . ' – ' . date('d M Y', strtotime($to_date)) : date('F Y', strtotime($month_year)) ?></p>
                 </div>
             </div>
 

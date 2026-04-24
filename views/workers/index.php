@@ -14,6 +14,7 @@
       <table>
         <thead>
           <tr>
+            <th style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllWorkers" onclick="toggleAllWorkers(this)"></th>
             <th>ID / Code</th>
             <th>Full Name</th>
             <th>ESI / PF</th>
@@ -27,6 +28,7 @@
         <tbody>
           <?php foreach($workers as $w): ?>
           <tr>
+            <td class="text-center"><input type="checkbox" class="worker-checkbox" value="<?= $w['id'] ?>" onchange="updateBulkActionBar()"></td>
             <td class="mono c-secondary fs12"><?= htmlspecialchars($w['worker_code']) ?></td>
             <td class="bold">
               <a href="/workers/profile?id=<?= $w['id'] ?>" class="c-primary" style="text-decoration:none;">
@@ -149,14 +151,27 @@
                 <?php endforeach; ?>
               </select>
             </div>
-            <div class="form-group">
-              <label class="form-label">Assign to Site</label>
-              <select class="form-input" name="site_id" id="worker-site_id">
-                <option value="">-- No Specific Site --</option>
-                <?php foreach($sites as $site): ?>
-                  <option value="<?= $site['id'] ?>"><?= htmlspecialchars($site['name']) ?></option>
-                <?php endforeach; ?>
-              </select>
+            <div class="form-group" style="grid-column: span 2;">
+              <div class="form-grid">
+                <div class="form-group">
+                  <label class="form-label">Client</label>
+                  <select class="form-input" id="worker-client_id" onchange="filterSitesByClient()">
+                    <option value="">-- Select Client First --</option>
+                    <?php foreach($clients as $c): ?>
+                      <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['company_name']) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Assign to Site</label>
+                  <select class="form-input" name="site_id" id="worker-site_id">
+                    <option value="" data-client-id="">-- No Specific Site --</option>
+                    <?php foreach($sites as $site): ?>
+                      <option value="<?= $site['id'] ?>" data-client-id="<?= $site['client_id'] ?>"><?= htmlspecialchars($site['name']) ?></option>
+                    <?php endforeach; ?>
+                  </select>
+                </div>
+              </div>
             </div>
             <div class="form-group">
               <label class="form-label">Status</label>
@@ -177,3 +192,198 @@
     </div>
   </div>
 </div>
+
+<script>
+function filterSitesByClient() {
+    const clientId = document.getElementById('worker-client_id').value;
+    const siteSelect = document.getElementById('worker-site_id');
+    const options = siteSelect.querySelectorAll('option');
+    
+    let firstValidOption = null;
+    
+    options.forEach(opt => {
+        if (!opt.value) {
+            opt.style.display = ''; // Always show "No Specific Site"
+            return;
+        }
+        if (!clientId || opt.getAttribute('data-client-id') === clientId) {
+            opt.style.display = '';
+            if (!firstValidOption) firstValidOption = opt;
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+    
+    // Automatically select the first valid site if the current selection is hidden
+    const selectedOption = siteSelect.options[siteSelect.selectedIndex];
+    if (selectedOption.style.display === 'none') {
+        siteSelect.value = firstValidOption ? firstValidOption.value : '';
+    }
+}
+</script>
+
+<!-- Bulk Action Bar -->
+<div id="bulk-action-bar" style="display:none; position:fixed; bottom:0; left:250px; right:0; background:var(--surface); border-top:1px solid var(--border-color); padding:15px 24px; box-shadow:0 -4px 15px rgba(0,0,0,0.05); z-index:100; align-items:center; justify-content:space-between;">
+    <div style="display:flex; align-items:center; gap:16px;">
+        <span id="bulk-count" class="badge b-primary" style="font-size:14px; padding:6px 12px;">0 Selected</span>
+        <span class="fs14 fw6">Workers</span>
+    </div>
+    <div style="display:flex; gap:12px;">
+        <button onclick="openBulkModal('modal-bulk-transfer')" class="btn btn-outline">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="m5 14 6-6 6 6"/><path d="M12 8V22"/><path d="M5 2h14"/></svg>
+            Transfer Sites
+        </button>
+        <button onclick="openBulkModal('modal-bulk-uniform')" class="btn btn-primary">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;"><path d="M20 14.66V20a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5.34"/><polygon points="18 2 22 6 12 16 8 16 8 12 18 2"/></svg>
+            Update Uniforms
+        </button>
+        <button onclick="clearBulkSelection()" class="btn btn-outline" style="border-color:transparent;">Cancel</button>
+    </div>
+</div>
+
+<!-- Bulk Transfer Modal -->
+<div class="modal-overlay" id="modal-bulk-transfer">
+  <div class="modal" style="max-width: 500px;">
+    <div class="modal-head">
+      <div class="modal-title">Bulk Transfer Sites</div>
+      <button class="modal-close" onclick="closeModal('modal-bulk-transfer')">&times;</button>
+    </div>
+    <form method="POST" action="/workers/bulk/transfer" id="form-bulk-transfer">
+      <div style="padding: 24px;">
+        <div id="transfer-hidden-inputs"></div>
+        <p class="fs13 c-secondary mb16">Moving <strong id="transfer-count-label">0</strong> workers to a new site.</p>
+        <div class="form-group">
+            <label class="form-label">Client</label>
+            <select class="form-input" id="bulk-client_id" onchange="filterBulkSites()">
+                <option value="">-- Select Client --</option>
+                <?php foreach($clients as $c): ?>
+                    <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['company_name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Destination Site</label>
+            <select class="form-input" name="site_id" id="bulk-site_id" required>
+                <option value="" data-client-id="">-- Select Site --</option>
+                <?php foreach($sites as $s): ?>
+                    <option value="<?= $s['id'] ?>" data-client-id="<?= $s['client_id'] ?>"><?= htmlspecialchars($s['name']) ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-bulk-transfer')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Transfer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Bulk Uniform Modal -->
+<div class="modal-overlay" id="modal-bulk-uniform">
+  <div class="modal" style="max-width: 500px;">
+    <div class="modal-head">
+      <div class="modal-title">Bulk Uniform Assignment</div>
+      <button class="modal-close" onclick="closeModal('modal-bulk-uniform')">&times;</button>
+    </div>
+    <form method="POST" action="/workers/bulk/uniform" id="form-bulk-uniform">
+      <div style="padding: 24px;">
+        <div id="uniform-hidden-inputs"></div>
+        <p class="fs13 c-secondary mb16">Updating uniforms for <strong id="uniform-count-label">0</strong> workers.</p>
+        <div class="form-group">
+            <label class="form-label">Uniform Details (Size/Type)</label>
+            <input type="text" name="uniform_details" class="form-input" placeholder="e.g., XL Shirt, 32 Pants">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Issue Date</label>
+            <input type="date" name="uniform_issue_date" class="form-input" value="<?= date('Y-m-d') ?>" required>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 24px;">
+          <button type="button" class="btn btn-outline" onclick="closeModal('modal-bulk-uniform')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Uniforms</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function toggleAllWorkers(masterCheckbox) {
+    const checkboxes = document.querySelectorAll('.worker-checkbox');
+    checkboxes.forEach(cb => cb.checked = masterCheckbox.checked);
+    updateBulkActionBar();
+}
+
+function updateBulkActionBar() {
+    const checkboxes = document.querySelectorAll('.worker-checkbox:checked');
+    const bar = document.getElementById('bulk-action-bar');
+    const countLabel = document.getElementById('bulk-count');
+    
+    if (checkboxes.length > 0) {
+        bar.style.display = 'flex';
+        countLabel.textContent = checkboxes.length + ' Selected';
+    } else {
+        bar.style.display = 'none';
+        document.getElementById('selectAllWorkers').checked = false;
+    }
+}
+
+function clearBulkSelection() {
+    document.querySelectorAll('.worker-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('selectAllWorkers').checked = false;
+    updateBulkActionBar();
+}
+
+function openBulkModal(modalId) {
+    // Close any existing open modals first to prevent stacking
+    document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('active'));
+    
+    const checkboxes = document.querySelectorAll('.worker-checkbox:checked');
+    if (checkboxes.length === 0) return;
+    
+    const count = checkboxes.length;
+    let inputsHtml = '';
+    checkboxes.forEach(cb => {
+        inputsHtml += `<input type="hidden" name="worker_ids[]" value="${cb.value}">`;
+    });
+    
+    if (modalId === 'modal-bulk-transfer') {
+        document.getElementById('transfer-hidden-inputs').innerHTML = inputsHtml;
+        document.getElementById('transfer-count-label').textContent = count;
+    } else if (modalId === 'modal-bulk-uniform') {
+        document.getElementById('uniform-hidden-inputs').innerHTML = inputsHtml;
+        document.getElementById('uniform-count-label').textContent = count;
+    }
+    
+    openModal(modalId);
+}
+
+function filterBulkSites() {
+    const clientId = document.getElementById('bulk-client_id').value;
+    const siteSelect = document.getElementById('bulk-site_id');
+    const options = siteSelect.querySelectorAll('option');
+    
+    let firstValidOption = null;
+    
+    options.forEach(opt => {
+        if (!opt.value) { 
+            opt.hidden = false;
+            opt.disabled = false;
+            return; 
+        }
+        if (!clientId || opt.getAttribute('data-client-id') === clientId) {
+            opt.hidden = false;
+            opt.disabled = false;
+            if (!firstValidOption) firstValidOption = opt;
+        } else {
+            opt.hidden = true;
+            opt.disabled = true;
+        }
+    });
+    
+    const selected = siteSelect.options[siteSelect.selectedIndex];
+    if (selected && selected.hidden) {
+        siteSelect.value = firstValidOption ? firstValidOption.value : '';
+    }
+}
+</script>

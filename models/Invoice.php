@@ -7,7 +7,7 @@ class Invoice {
 
     public function getAllInvoices($siteIds = null) {
         $query = "
-            SELECT i.invoice_no, i.issue_date, i.amount, i.status, c.company_name, b.month_year, s.name as site_name
+            SELECT i.invoice_no, i.issue_date, i.amount, i.status, c.company_name, b.month_year, b.from_date, b.to_date, s.name as site_name
             FROM invoices i
             JOIN billing b ON i.billing_id = b.id
             JOIN clients c ON b.client_id = c.id
@@ -35,7 +35,7 @@ class Invoice {
 
     public function getPendingBilling($siteIds = null) {
         $query = "
-            SELECT b.*, c.company_name, s.name as site_name 
+            SELECT b.*, c.company_name, s.name as site_name, b.from_date, b.to_date 
             FROM billing b 
             JOIN clients c ON b.client_id = c.id
             JOIN sites s ON b.site_id = s.id
@@ -96,7 +96,7 @@ class Invoice {
 
     public function getInvoiceDetails($invoiceNo) {
         $stmt = $this->db->prepare("
-            SELECT i.*, b.month_year, b.site_id, c.company_name, c.contact_person, c.address, c.gstin, c.id as client_id,
+            SELECT i.*, b.month_year, b.from_date, b.to_date, b.site_id, c.company_name, c.contact_person, c.address, c.gstin, c.id as client_id,
                    s.name as site_name, s.address as site_address, t.slug as template_slug
             FROM invoices i
             JOIN billing b ON i.billing_id = b.id
@@ -110,17 +110,32 @@ class Invoice {
 
         if (!$data) return null;
 
-        $itemsStmt = $this->db->prepare("
-            SELECT wc.name as description, 
-                   SUM(CASE WHEN a.status='p' THEN 1 WHEN a.status='h' THEN 0.5 WHEN a.status='off' THEN 1 ELSE 0 END) as quantity, 
-                   wc.default_rate as rate
-            FROM attendance a
-            JOIN workers w ON a.worker_id = w.id
-            JOIN worker_categories wc ON w.category_id = wc.id
-            WHERE a.site_id = :sid AND TO_CHAR(a.attendance_date, 'YYYY-MM') = :my
-            GROUP BY wc.name, wc.default_rate
-        ");
-        $itemsStmt->execute(['sid' => $data['site_id'], 'my' => $data['month_year']]);
+        // Use date range if available, fall back to month_year for legacy data
+        if (!empty($data['from_date']) && !empty($data['to_date'])) {
+            $itemsStmt = $this->db->prepare("
+                SELECT wc.name as description, 
+                       SUM(CASE WHEN a.status='p' THEN 1 WHEN a.status='h' THEN 0.5 WHEN a.status='off' THEN 1 ELSE 0 END) as quantity, 
+                       wc.default_rate as rate
+                FROM attendance a
+                JOIN workers w ON a.worker_id = w.id
+                JOIN worker_categories wc ON w.category_id = wc.id
+                WHERE a.site_id = :sid AND a.attendance_date BETWEEN :fd AND :td
+                GROUP BY wc.name, wc.default_rate
+            ");
+            $itemsStmt->execute(['sid' => $data['site_id'], 'fd' => $data['from_date'], 'td' => $data['to_date']]);
+        } else {
+            $itemsStmt = $this->db->prepare("
+                SELECT wc.name as description, 
+                       SUM(CASE WHEN a.status='p' THEN 1 WHEN a.status='h' THEN 0.5 WHEN a.status='off' THEN 1 ELSE 0 END) as quantity, 
+                       wc.default_rate as rate
+                FROM attendance a
+                JOIN workers w ON a.worker_id = w.id
+                JOIN worker_categories wc ON w.category_id = wc.id
+                WHERE a.site_id = :sid AND TO_CHAR(a.attendance_date, 'YYYY-MM') = :my
+                GROUP BY wc.name, wc.default_rate
+            ");
+            $itemsStmt->execute(['sid' => $data['site_id'], 'my' => $data['month_year']]);
+        }
         $data['items'] = $itemsStmt->fetchAll();
 
         return $data;
