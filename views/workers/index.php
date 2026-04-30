@@ -137,6 +137,22 @@
             </div>
           </div>
 
+          <div class="form-section-title">Emergency / Guardian Details</div>
+          <div class="form-grid mb24">
+            <div class="form-group">
+              <label class="form-label">Guardian Name</label>
+              <input class="form-input" type="text" name="guardian_name" id="worker-guardian_name" placeholder="Name of Guardian">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Guardian Phone</label>
+              <input class="form-input" type="tel" name="guardian_phone" id="worker-guardian_phone" placeholder="Contact Number">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label">Guardian Place</label>
+              <input class="form-input" type="text" name="guardian_place" id="worker-guardian_place" placeholder="City / Town / Village">
+            </div>
+          </div>
+
           <div class="form-section-title">Employment & Alignment</div>
           <div class="form-grid">
             <div class="form-group">

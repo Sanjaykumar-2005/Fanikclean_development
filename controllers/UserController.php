@@ -20,6 +20,26 @@ class UserController extends Controller {
             'roles' => $roles
         ]);
     }
+
+    public function profile() {
+        $id = $_GET['id'] ?? null;
+        if (!$id) {
+            $this->redirect('/users');
+            return;
+        }
+
+        $userModel = new User();
+        $user = $userModel->getById($id);
+
+        if (!$user) {
+            $_SESSION['error'] = "User not found";
+            $this->redirect('/users');
+            return;
+        }
+
+        $this->view('users/profile', ['user' => $user]);
+    }
+
     public function create() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $name = $_POST['full_name'];
@@ -29,12 +49,18 @@ class UserController extends Controller {
             
             $passwordHash = password_hash($password, PASSWORD_BCRYPT);
             
+            $guardianData = [
+                'guardian_name' => $_POST['guardian_name'] ?? '',
+                'guardian_phone' => $_POST['guardian_phone'] ?? '',
+                'guardian_place' => $_POST['guardian_place'] ?? ''
+            ];
+            
             $userModel = new User();
             // Check if user exists
             if ($userModel->findByEmail($email)) {
                 $_SESSION['error'] = "Email already registered";
             } else {
-                if ($userModel->create($name, $email, $passwordHash, $roleId)) {
+                if ($userModel->create($name, $email, $passwordHash, $roleId, $guardianData)) {
                     $_SESSION['toast'] = "User created successfully";
                 }
             }
@@ -49,7 +75,10 @@ class UserController extends Controller {
                 'full_name' => $_POST['full_name'],
                 'role_id' => $_POST['role_id'],
                 'site_id' => $_POST['site_id'],
-                'status' => $_POST['status']
+                'status' => $_POST['status'],
+                'guardian_name' => $_POST['guardian_name'] ?? '',
+                'guardian_phone' => $_POST['guardian_phone'] ?? '',
+                'guardian_place' => $_POST['guardian_place'] ?? ''
             ];
             
             $userModel = new User();

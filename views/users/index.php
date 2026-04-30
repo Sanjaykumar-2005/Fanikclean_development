@@ -37,6 +37,10 @@
               </span>
             </td>
             <td class="text-right">
+              <a href="/users/profile?id=<?= $u['id'] ?>" class="btn btn-sm btn-outline" style="margin-right: 8px;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                View Profile
+              </a>
               <button class="btn btn-sm" onclick='openEditUserModal(<?= json_encode($u) ?>)'>
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
                 Configure
@@ -65,6 +69,24 @@
             <label class="form-label">Full Name</label>
             <input class="form-input" type="text" name="full_name" id="edit-user-name" placeholder="Staff Name" required>
           </div>
+          
+          <div class="form-section-title mt24 mb16" style="font-weight: 600; color: var(--text);">Emergency / Guardian Details</div>
+          <div class="form-grid mb16">
+            <div class="form-group">
+              <label class="form-label">Guardian Name</label>
+              <input class="form-input" type="text" name="guardian_name" id="edit-user-guardian_name" placeholder="Name of Guardian">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Guardian Phone</label>
+              <input class="form-input" type="tel" name="guardian_phone" id="edit-user-guardian_phone" placeholder="Contact Number">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label">Guardian Place</label>
+              <input class="form-input" type="text" name="guardian_place" id="edit-user-guardian_place" placeholder="City / Town / Village">
+            </div>
+          </div>
+          
+          <div class="form-section-title mt24 mb16" style="font-weight: 600; color: var(--text);">System Configuration</div>
 
           <div class="form-grid mb16">
             <div class="form-group">
@@ -123,6 +145,24 @@
             <label class="form-label">Email Address</label>
             <input class="form-input" type="email" name="email" placeholder="email@example.com" required>
           </div>
+          
+          <div class="form-section-title mt24 mb16" style="font-weight: 600; color: var(--text);">Emergency / Guardian Details</div>
+          <div class="form-grid mb16">
+            <div class="form-group">
+              <label class="form-label">Guardian Name</label>
+              <input class="form-input" type="text" name="guardian_name" id="add-user-guardian_name" placeholder="Name of Guardian">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Guardian Phone</label>
+              <input class="form-input" type="tel" name="guardian_phone" id="add-user-guardian_phone" placeholder="Contact Number">
+            </div>
+            <div class="form-group" style="grid-column: span 2;">
+              <label class="form-label">Guardian Place</label>
+              <input class="form-input" type="text" name="guardian_place" id="add-user-guardian_place" placeholder="City / Town / Village">
+            </div>
+          </div>
+          
+          <div class="form-section-title mt24 mb16" style="font-weight: 600; color: var(--text);">System Configuration</div>
 
           <div class="form-grid mb16">
             <div class="form-group">

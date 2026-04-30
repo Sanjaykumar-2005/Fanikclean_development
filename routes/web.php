@@ -22,6 +22,7 @@ $router->post('/workers/bulk/uniform', 'WorkerController', 'bulkUniform');
 
 // Users
 $router->get('/users', 'UserController', 'index');
+$router->get('/users/profile', 'UserController', 'profile');
 $router->post('/users/create', 'UserController', 'create');
 $router->post('/users/update', 'UserController', 'update');
 $router->get('/users/assignments', 'ManagerSiteController', 'index');

@@ -58,11 +58,13 @@ class Worker {
         $stmt = $this->db->prepare("
             INSERT INTO workers (
                 worker_code, full_name, mobile, aadhaar, doj, category_id, site_id, status,
-                esi_number, pf_number, photo_path, age, experience, uniform_issue_date, uniform_details
+                esi_number, pf_number, photo_path, age, experience, uniform_issue_date, uniform_details,
+                guardian_name, guardian_phone, guardian_place
             ) 
             VALUES (
                 :wc, :fn, :mob, :aadh, :doj, :cat, :site, :status,
-                :esi, :pf, :photo, :age, :exp, :uid, :udet
+                :esi, :pf, :photo, :age, :exp, :uid, :udet,
+                :g_name, :g_phone, :g_place
             )
         ");
         return $stmt->execute([
@@ -80,7 +82,10 @@ class Worker {
             'age' => !empty($data['age']) ? $data['age'] : null,
             'exp' => $data['experience'] ?? null,
             'uid' => !empty($data['uniform_issue_date']) ? $data['uniform_issue_date'] : null,
-            'udet' => $data['uniform_details'] ?? null
+            'udet' => $data['uniform_details'] ?? null,
+            'g_name' => $data['guardian_name'] ?? null,
+            'g_phone' => $data['guardian_phone'] ?? null,
+            'g_place' => $data['guardian_place'] ?? null
         ]);
     }
 
@@ -99,7 +104,10 @@ class Worker {
                 age = :age,
                 experience = :exp,
                 uniform_issue_date = :uid,
-                uniform_details = :udet
+                uniform_details = :udet,
+                guardian_name = :g_name,
+                guardian_phone = :g_phone,
+                guardian_place = :g_place
         ";
         
         $params = [
@@ -116,7 +124,10 @@ class Worker {
             'age' => !empty($data['age']) ? $data['age'] : null,
             'exp' => $data['experience'] ?? null,
             'uid' => !empty($data['uniform_issue_date']) ? $data['uniform_issue_date'] : null,
-            'udet' => $data['uniform_details'] ?? null
+            'udet' => $data['uniform_details'] ?? null,
+            'g_name' => $data['guardian_name'] ?? null,
+            'g_phone' => $data['guardian_phone'] ?? null,
+            'g_place' => $data['guardian_place'] ?? null
         ];
 
         if (isset($data['photo_path'])) {

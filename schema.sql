@@ -52,6 +52,12 @@ CREATE TABLE users (
     role_id INT REFERENCES roles(id),
     site_id INT REFERENCES sites(id) ON DELETE SET NULL, 
     phone VARCHAR(15),
+    
+    -- Guardian Details
+    guardian_name VARCHAR(100),
+    guardian_phone VARCHAR(15),
+    guardian_place VARCHAR(150),
+    
     status VARCHAR(20) DEFAULT 'Active' CHECK (status IN ('Active', 'Inactive')),
     last_login TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -83,6 +89,11 @@ CREATE TABLE workers (
     pf_number VARCHAR(50),
     age INT,
     experience TEXT,
+    
+    -- Guardian Details
+    guardian_name VARCHAR(100),
+    guardian_phone VARCHAR(15),
+    guardian_place VARCHAR(150),
     
     -- Managed Assets (Legacy fields kept for compatibility)
     uniform_issue_date DATE,

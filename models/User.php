@@ -14,7 +14,7 @@ class User {
         return $stmt->fetch();
     }
 
-    public function create($fullName, $email, $passwordHash, $roleId = 2) {
+    public function create($fullName, $email, $passwordHash, $roleId = 2, $guardianData = []) {
         // Check if any users exist in the system
         $countStmt = $this->db->query("SELECT COUNT(*) FROM users");
         $count = $countStmt->fetchColumn();
@@ -24,8 +24,19 @@ class User {
             $roleId = 1;
         }
 
-        $stmt = $this->db->prepare("INSERT INTO users (full_name, email, password_hash, role_id) VALUES (:f, :e, :p, :r)");
-        return $stmt->execute(['f' => $fullName, 'e' => $email, 'p' => $passwordHash, 'r' => $roleId]);
+        $stmt = $this->db->prepare("
+            INSERT INTO users (full_name, email, password_hash, role_id, guardian_name, guardian_phone, guardian_place) 
+            VALUES (:f, :e, :p, :r, :gn, :gp, :gpl)
+        ");
+        return $stmt->execute([
+            'f' => $fullName, 
+            'e' => $email, 
+            'p' => $passwordHash, 
+            'r' => $roleId,
+            'gn' => $guardianData['guardian_name'] ?? null,
+            'gp' => $guardianData['guardian_phone'] ?? null,
+            'gpl' => $guardianData['guardian_place'] ?? null
+        ]);
     }
 
     public function getAll() {
@@ -38,13 +49,28 @@ class User {
         ")->fetchAll();
     }
 
+    public function getById($id) {
+        $stmt = $this->db->prepare("
+            SELECT u.*, r.name as role_name, s.name as site_name 
+            FROM users u 
+            LEFT JOIN roles r ON u.role_id = r.id 
+            LEFT JOIN sites s ON u.site_id = s.id 
+            WHERE u.id = :id
+        ");
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch();
+    }
+
     public function update($id, $data) {
         $stmt = $this->db->prepare("
             UPDATE users 
             SET full_name = :fn, 
                 role_id = :rid, 
                 site_id = :sid,
-                status = :status 
+                status = :status,
+                guardian_name = :gn,
+                guardian_phone = :gp,
+                guardian_place = :gpl
             WHERE id = :id
         ");
         return $stmt->execute([
@@ -52,7 +78,10 @@ class User {
             'fn' => $data['full_name'],
             'rid' => $data['role_id'],
             'sid' => !empty($data['site_id']) ? $data['site_id'] : null,
-            'status' => $data['status']
+            'status' => $data['status'],
+            'gn' => $data['guardian_name'] ?? null,
+            'gp' => $data['guardian_phone'] ?? null,
+            'gpl' => $data['guardian_place'] ?? null
         ]);
     }
 

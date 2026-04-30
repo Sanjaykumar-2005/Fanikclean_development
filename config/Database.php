@@ -4,12 +4,23 @@ class Database {
 
     public static function connect() {
         if (self::$pdo === null) {
-            // Modify these credentials to match your local PostgreSQL setup
-            $host = 'localhost';
-            $db   = 'fanikclean';
-            $user = 'postgres';
-            $pass = 'Mskumar@05'; 
-            $port = '5432';
+            // Load environment variables if .env exists
+            $envPath = __DIR__ . '/../.env';
+            if (file_exists($envPath)) {
+                $env = parse_ini_file($envPath);
+                $host = $env['DB_HOST'] ?? 'localhost';
+                $db   = $env['DB_NAME'] ?? 'fanikclean';
+                $user = $env['DB_USER'] ?? 'postgres';
+                $pass = $env['DB_PASS'] ?? '';
+                $port = $env['DB_PORT'] ?? '5432';
+            } else {
+                // Fallback to defaults
+                $host = 'localhost';
+                $db   = 'fanikclean';
+                $user = 'postgres';
+                $pass = ''; 
+                $port = '5432';
+            }
 
             $dsn = "pgsql:host=$host;port=$port;dbname=$db;";
             try {

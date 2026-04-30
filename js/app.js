@@ -74,6 +74,10 @@ function openEditWorkerModal(w) {
     document.getElementById('worker-uniform_issue_date').value = w.uniform_issue_date || '';
     document.getElementById('worker-uniform_details').value = w.uniform_details || '';
     
+    document.getElementById('worker-guardian_name').value = w.guardian_name || '';
+    document.getElementById('worker-guardian_phone').value = w.guardian_phone || '';
+    document.getElementById('worker-guardian_place').value = w.guardian_place || '';
+    
     // Handle Client & Site Relationship
     const siteSelect = document.getElementById('worker-site_id');
     const clientSelect = document.getElementById('worker-client_id');
@@ -111,5 +115,10 @@ function openEditUserModal(u) {
     document.getElementById('edit-user-role').value = u.role_id;
     document.getElementById('edit-user-site').value = u.site_id || '';
     document.getElementById('edit-user-status').value = u.status;
+    
+    document.getElementById('edit-user-guardian_name').value = u.guardian_name || '';
+    document.getElementById('edit-user-guardian_phone').value = u.guardian_phone || '';
+    document.getElementById('edit-user-guardian_place').value = u.guardian_place || '';
+    
     openModal('modal-edit-user');
 }

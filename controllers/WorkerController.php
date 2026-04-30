@@ -67,6 +67,9 @@ class WorkerController extends Controller {
                 'experience' => $_POST['experience'] ?? '',
                 'uniform_issue_date' => $_POST['uniform_issue_date'] ?? null,
                 'uniform_details' => $_POST['uniform_details'] ?? '',
+                'guardian_name' => $_POST['guardian_name'] ?? '',
+                'guardian_phone' => $_POST['guardian_phone'] ?? '',
+                'guardian_place' => $_POST['guardian_place'] ?? '',
                 'photo_path' => $photoPath
             ];
             
@@ -96,7 +99,10 @@ class WorkerController extends Controller {
                 'age' => $_POST['age'] ?? null,
                 'experience' => $_POST['experience'] ?? '',
                 'uniform_issue_date' => $_POST['uniform_issue_date'] ?? null,
-                'uniform_details' => $_POST['uniform_details'] ?? ''
+                'uniform_details' => $_POST['uniform_details'] ?? '',
+                'guardian_name' => $_POST['guardian_name'] ?? '',
+                'guardian_phone' => $_POST['guardian_phone'] ?? '',
+                'guardian_place' => $_POST['guardian_place'] ?? ''
             ];
 
             $photoPath = $this->handlePhotoUpload();
