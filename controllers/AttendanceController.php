@@ -7,7 +7,8 @@ class AttendanceController extends Controller {
     
     public function index() {
         $this->checkAuth();
-        $date = $_GET['date'] ?? date('Y-m-d');
+        $fromDate = $_GET['from_date'] ?? $_GET['date'] ?? date('Y-m-d');
+        $toDate = $_GET['to_date'] ?? $fromDate;
         $siteId = $_GET['site_id'] ?? null;
         
         $attModel = new Attendance();
@@ -23,7 +24,8 @@ class AttendanceController extends Controller {
             'pageTitle' => 'Worker Attendance',
             'workers' => $workers,
             'sites' => $sites,
-            'date' => $date,
+            'fromDate' => $fromDate,
+            'toDate' => $toDate,
             'selectedSiteId' => $siteId
         ]);
     }
@@ -67,7 +69,8 @@ class AttendanceController extends Controller {
 
     public function saveBulk() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $date = $_POST['attendance_date'] ?? date('Y-m-d');
+            $fromDate = $_POST['from_date'] ?? date('Y-m-d');
+            $toDate = $_POST['to_date'] ?? $fromDate;
             $siteId = $_POST['site_id'] ?? null;
             $attendanceData = $_POST['attendance'] ?? [];
 
@@ -81,10 +84,27 @@ class AttendanceController extends Controller {
 
             $attModel = new Attendance();
             $userId = $_SESSION['user_id'];
-            $attModel->saveBulk($siteId, $date, $attendanceData, $userId);
             
-            $_SESSION['toast'] = "Attendance saved for " . date('d M', strtotime($date));
-            $this->redirect('/attendance?site_id=' . $siteId . '&date=' . $date);
+            // Loop through all dates in range (inclusive)
+            $start = new DateTime($fromDate);
+            $end = new DateTime($toDate);
+            $end->modify('+1 day'); // inclusive
+            $interval = new DateInterval('P1D');
+            $dateRange = new DatePeriod($start, $interval, $end);
+            
+            $savedDays = 0;
+            foreach ($dateRange as $d) {
+                $currentDate = $d->format('Y-m-d');
+                $attModel->saveBulk($siteId, $currentDate, $attendanceData, $userId);
+                $savedDays++;
+            }
+            
+            if ($fromDate === $toDate) {
+                $_SESSION['toast'] = "Attendance saved for " . date('d M', strtotime($fromDate));
+            } else {
+                $_SESSION['toast'] = "Attendance saved for $savedDays days (" . date('d M', strtotime($fromDate)) . " to " . date('d M', strtotime($toDate)) . ")";
+            }
+            $this->redirect('/attendance?site_id=' . $siteId . '&from_date=' . $fromDate . '&to_date=' . $toDate);
         }
     }
 

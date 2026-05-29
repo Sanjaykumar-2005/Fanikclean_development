@@ -3,9 +3,14 @@
     <!-- Filter Bar -->
     <div class="card mb20">
       <div class="flex gap16 flex-wrap" style="align-items: flex-end;">
-        <div class="form-group" style="flex: 1; min-width: 200px;">
-          <label class="form-label">Attendance Date</label>
-          <input type="date" name="attendance_date" class="form-input" value="<?= htmlspecialchars($date) ?>" required>
+        <div class="form-group" style="flex: 1; min-width: 150px;">
+          <label class="form-label">From Date</label>
+          <input type="date" name="from_date" class="form-input" value="<?= htmlspecialchars($fromDate) ?>" onchange="loadWorkers()" required>
+        </div>
+        
+        <div class="form-group" style="flex: 1; min-width: 150px;">
+          <label class="form-label">To Date</label>
+          <input type="date" name="to_date" class="form-input" value="<?= htmlspecialchars($toDate) ?>" required>
         </div>
         
         <div class="form-group" style="flex: 2; min-width: 250px;">
@@ -35,7 +40,13 @@
     <div class="card">
       <div class="card-head">
         <div class="card-title">Worker Attendance Grid</div>
-        <div class="chip b-blue"><?= date('l, d F Y', strtotime($date)) ?></div>
+        <div class="chip b-blue">
+          <?php if ($fromDate === $toDate): ?>
+              <?= date('l, d F Y', strtotime($fromDate)) ?>
+          <?php else: ?>
+              <?= date('d M Y', strtotime($fromDate)) ?> – <?= date('d M Y', strtotime($toDate)) ?>
+          <?php endif; ?>
+        </div>
       </div>
       <div class="table-wrap">
         <table>
@@ -60,7 +71,7 @@
 <script>
 function loadWorkers() {
     var siteId = document.getElementById('site_select').value;
-    var attDate = document.querySelector('input[name="attendance_date"]').value;
+    var attDate = document.querySelector('input[name="from_date"]').value;
     var month = attDate ? attDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
     
     var tbody = document.getElementById('worker_tbody');
