@@ -28,30 +28,56 @@ class ManagerAttendance {
         return $stmt->fetchAll();
     }
 
-    public function saveBulk($monthYear, $records, $adminUserId) {
+    /**
+     * Save the manager attendance grid. Each record carries its own set of dates
+     * (chosen per manager via the calendar picker): the manager's status / note is
+     * applied to every selected day. Dates are validated with checkdate.
+     * Returns the number of records written, or false on failure.
+     *
+     * $records: [ userId => ['status'=>, 'note'=>, 'dates'=>'Y-m-d,Y-m-d,...'] ]
+     */
+    public function saveGrid($records, $adminUserId) {
+        if (empty($records)) {
+            return false;
+        }
+
+        $valid = ['p', 'off', 'h', 'pl', 'sd'];
+        $saved = 0;
+
         $this->db->beginTransaction();
         try {
             $stmt = $this->db->prepare("
                 INSERT INTO manager_attendance (user_id, attendance_date, status, note, updated_by)
                 VALUES (:uid, :adate, :status, :note, :upby)
-                ON CONFLICT (user_id, attendance_date) 
+                ON CONFLICT (user_id, attendance_date)
                 DO UPDATE SET status = EXCLUDED.status, note = EXCLUDED.note, updated_by = EXCLUDED.updated_by, updated_at = CURRENT_TIMESTAMP
             ");
 
-            foreach ($records as $date => $siteRecords) {
-                foreach ($siteRecords as $userId => $data) {
+            foreach ($records as $userId => $rec) {
+                $status = $rec['status'] ?? '';
+                if (!in_array($status, $valid)) { continue; }
+
+                $note = isset($rec['note']) ? trim($rec['note']) : '';
+                $dates = isset($rec['dates']) ? array_filter(explode(',', $rec['dates'])) : [];
+                foreach ($dates as $dt) {
+                    $dt = trim($dt);
+                    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dt)) { continue; }
+                    $p = explode('-', $dt);
+                    if (!checkdate((int)$p[1], (int)$p[2], (int)$p[0])) { continue; }
+
                     $stmt->execute([
                         'uid' => $userId,
-                        'adate' => $date,
-                        'status' => $data['status'],
-                        'note' => $data['note'] ?? null,
+                        'adate' => $dt,
+                        'status' => $status,
+                        'note' => ($note === '' ? null : $note),
                         'upby' => $adminUserId
                     ]);
+                    $saved++;
                 }
             }
             $this->db->commit();
-            return true;
-        } catch (Exception $e) {
+            return $saved;
+        } catch (\Exception $e) {
             $this->db->rollBack();
             return false;
         }

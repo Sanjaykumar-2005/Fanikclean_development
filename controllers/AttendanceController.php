@@ -9,37 +9,70 @@ class AttendanceController extends Controller {
         $this->checkAuth();
         $fromDate = $_GET['from_date'] ?? $_GET['date'] ?? date('Y-m-d');
         $toDate = $_GET['to_date'] ?? $fromDate;
-        $siteId = $_GET['site_id'] ?? null;
-        
-        $attModel = new Attendance();
-        $workers = [];
-        // Workers are loaded via AJAX API now, but we prepare the view
-        
+        $filterSiteId = $_GET['site_id'] ?? null; // optional: narrow the list to one site
+        $month = date('Y-m', strtotime($fromDate));
+
         $db = Database::connect();
+
+        // Resolve the site scope for the current user.
         if ($this->isAdmin()) {
             $sites = $db->query("SELECT id, name FROM sites ORDER BY name")->fetchAll();
+            $scopeSiteIds = null; // null = all sites
         } else {
             // Read assignments live from the DB — the login-time session snapshot
             // goes stale when an Admin assigns sites after the manager logged in.
             $userModel = new User();
-            $assignedIds = $userModel->getAssignedSiteIds($_SESSION['user_id']);
-            $_SESSION['assigned_site_ids'] = $assignedIds; // refresh so POST-side canAccessSite() works
-            if (empty($assignedIds)) {
-                // Manager has no sites assigned yet — avoid an invalid "IN ()" query
+            $scopeSiteIds = $userModel->getAssignedSiteIds($_SESSION['user_id']);
+            $_SESSION['assigned_site_ids'] = $scopeSiteIds;
+            if (empty($scopeSiteIds)) {
                 $sites = [];
             } else {
-                $placeholders = implode(',', array_fill(0, count($assignedIds), '?'));
-                $stmt = $db->prepare("SELECT id, name FROM sites WHERE id IN ($placeholders) ORDER BY name");
-                $stmt->execute(array_values($assignedIds));
+                $ph = implode(',', array_fill(0, count($scopeSiteIds), '?'));
+                $stmt = $db->prepare("SELECT id, name FROM sites WHERE id IN ($ph) ORDER BY name");
+                $stmt->execute(array_values($scopeSiteIds));
                 $sites = $stmt->fetchAll();
             }
         }
 
-        // For managers, pre-select their site so the worker register loads
-        // automatically — no manual site selection needed. (Multi-site managers
-        // can still switch sites from the dropdown.)
-        if (!$this->isAdmin() && empty($siteId) && !empty($sites)) {
-            $siteId = $sites[0]['id'];
+        // Load every worker in scope (all sites by default), with their site name,
+        // monthly PL count, and any attendance already saved for the chosen day.
+        $workers = [];
+        if ($this->isAdmin() || !empty($scopeSiteIds)) {
+            $params = ['my' => $month, 'dt' => $fromDate];
+            $where = ["w.status = 'Active'"];
+
+            if (!$this->isAdmin()) {
+                $keys = [];
+                foreach ($scopeSiteIds as $i => $sid) { $keys[] = ":s$i"; $params["s$i"] = $sid; }
+                $where[] = "w.site_id IN (" . implode(',', $keys) . ")";
+            }
+            if ($filterSiteId) {
+                $where[] = "w.site_id = :fsid";
+                $params['fsid'] = $filterSiteId;
+            }
+
+            $sql = "
+                SELECT w.id, w.full_name, w.worker_code, w.site_id,
+                       wc.name AS category_name, s.name AS site_name,
+                       COALESCE(att.pl_count, 0) AS pl_count,
+                       td.status   AS saved_status,
+                       td.ot_hours AS saved_ot,
+                       td.note     AS saved_note
+                FROM workers w
+                JOIN worker_categories wc ON w.category_id = wc.id
+                JOIN sites s ON w.site_id = s.id
+                LEFT JOIN (
+                    SELECT worker_id, COUNT(*) AS pl_count FROM attendance
+                    WHERE status = 'pl' AND TO_CHAR(attendance_date, 'YYYY-MM') = :my
+                    GROUP BY worker_id
+                ) att ON w.id = att.worker_id
+                LEFT JOIN attendance td ON td.worker_id = w.id AND td.attendance_date = :dt
+                WHERE " . implode(' AND ', $where) . "
+                ORDER BY s.name ASC, w.full_name ASC
+            ";
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+            $workers = $stmt->fetchAll();
         }
 
         $this->view('attendance/index', [
@@ -48,7 +81,7 @@ class AttendanceController extends Controller {
             'sites' => $sites,
             'fromDate' => $fromDate,
             'toDate' => $toDate,
-            'selectedSiteId' => $siteId
+            'selectedSiteId' => $filterSiteId
         ]);
     }
 
@@ -92,61 +125,50 @@ class AttendanceController extends Controller {
     public function saveBulk() {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $fromDate = $_POST['from_date'] ?? date('Y-m-d');
-            $toDate = $_POST['to_date'] ?? $fromDate;
-            $siteId = $_POST['site_id'] ?? null;
+            $filterSiteId = $_POST['site_id'] ?? null; // only used to preserve the filter on redirect
             $attendanceData = $_POST['attendance'] ?? [];
 
-            if ($siteId && !$this->canAccessSite($siteId)) {
-                $_SESSION['error'] = "Unauthorized site access";
-                $this->redirect('/attendance');
-                return;
-            }
+            if (empty($attendanceData)) { $this->redirect('/attendance'); return; }
 
-            if (!$siteId) { $this->redirect('/attendance'); return; }
+            // Managers may only save workers within their assigned sites; each worker
+            // is saved under their own site (the grid spans multiple sites now).
+            $allowedSiteIds = null;
+            if (!$this->isAdmin()) {
+                $userModel = new User();
+                $allowedSiteIds = $userModel->getAssignedSiteIds($_SESSION['user_id']);
+                $_SESSION['assigned_site_ids'] = $allowedSiteIds;
+            }
 
             $attModel = new Attendance();
-            $userId = $_SESSION['user_id'];
-            
-            // Loop through all dates in range (inclusive)
-            $start = new DateTime($fromDate);
-            $end = new DateTime($toDate);
-            $end->modify('+1 day'); // inclusive
-            $interval = new DateInterval('P1D');
-            $dateRange = new DatePeriod($start, $interval, $end);
-            
-            $savedDays = 0;
-            foreach ($dateRange as $d) {
-                $currentDate = $d->format('Y-m-d');
-                $attModel->saveBulk($siteId, $currentDate, $attendanceData, $userId);
-                $savedDays++;
-            }
-            
-            if ($fromDate === $toDate) {
-                $_SESSION['toast'] = "Attendance saved for " . date('d M', strtotime($fromDate));
+            // Each worker carries its own selected dates (from the calendar picker).
+            $savedRows = $attModel->saveGrid($attendanceData, $_SESSION['user_id'], $allowedSiteIds);
+
+            if ($savedRows === false) {
+                $_SESSION['error'] = "Failed to save attendance.";
             } else {
-                $_SESSION['toast'] = "Attendance saved for $savedDays days (" . date('d M', strtotime($fromDate)) . " to " . date('d M', strtotime($toDate)) . ")";
+                $_SESSION['toast'] = "Attendance saved ($savedRows record" . ($savedRows == 1 ? '' : 's') . ").";
             }
-            $this->redirect('/attendance?site_id=' . $siteId . '&from_date=' . $fromDate . '&to_date=' . $toDate);
+
+            $redirect = '/attendance?from_date=' . $fromDate;
+            if ($filterSiteId) { $redirect .= '&site_id=' . $filterSiteId; }
+            $this->redirect($redirect);
         }
     }
 
     public function saveManagerAttendance() {
         $this->requireRole([1]);
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $date = $_POST['attendance_date'] ?? date('Y-m-d');
-            $month = date('Y-m', strtotime($date));
-            $attendanceData = $_POST['manager_attendance'] ?? []; // [uid => [status, note]]
-            
-            // Format for saveBulk: [ 'YYYY-MM-DD' => [ uid => [status, note] ] ]
-            $formattedRecords = [
-                $date => $attendanceData
-            ];
-            
+            $date = $_POST['attendance_date'] ?? date('Y-m-d'); // anchor day (for redirect)
+            // Each manager carries its own selected dates (from the calendar picker).
+            $attendanceData = $_POST['manager_attendance'] ?? []; // [uid => [status, note, dates]]
+
             $maModel = new ManagerAttendance();
-            if ($maModel->saveBulk($month, $formattedRecords, $_SESSION['user_id'])) {
-                $_SESSION['toast'] = "Manager attendance saved for " . date('d M', strtotime($date));
-            } else {
+            $savedRows = $maModel->saveGrid($attendanceData, $_SESSION['user_id']);
+
+            if ($savedRows === false) {
                 $_SESSION['error'] = "Failed to update internal records";
+            } else {
+                $_SESSION['toast'] = "Manager attendance saved ($savedRows record" . ($savedRows == 1 ? '' : 's') . ").";
             }
             $this->redirect('/attendance/manager?date=' . $date);
         }
