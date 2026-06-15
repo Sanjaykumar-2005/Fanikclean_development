@@ -17,14 +17,13 @@
           <label class="form-label">Select Site / Project</label>
           <select class="form-input" id="site_select" name="site_id" onchange="loadWorkers()" required>
               <option value="">-- Choose Site --</option>
-              <?php 
-                  $db = Database::connect(); 
-                  $sites = $db->query("SELECT * FROM sites")->fetchAll();
-                  foreach($sites as $s): 
-              ?>
+              <?php foreach(($sites ?? []) as $s): ?>
               <option value="<?= $s['id'] ?>" <?= ($selectedSiteId == $s['id']) ? 'selected' : '' ?>><?= htmlspecialchars($s['name']) ?></option>
               <?php endforeach; ?>
           </select>
+          <?php if (empty($sites)): ?>
+          <div class="fs11 c-secondary" style="margin-top:6px; color: var(--danger);">No sites assigned to you yet. Ask an Admin to assign you a site under "Site Assignments".</div>
+          <?php endif; ?>
         </div>
 
         <div style="margin-bottom: 2px;">

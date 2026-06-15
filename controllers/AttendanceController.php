@@ -16,9 +16,31 @@ class AttendanceController extends Controller {
         // Workers are loaded via AJAX API now, but we prepare the view
         
         $db = Database::connect();
-        $sites = $this->isAdmin() ? 
-                 $db->query("SELECT id, name FROM sites ORDER BY name")->fetchAll() : 
-                 $db->query("SELECT id, name FROM sites WHERE id IN (".implode(',',$this->getAssignedSiteIds()).") ORDER BY name")->fetchAll();
+        if ($this->isAdmin()) {
+            $sites = $db->query("SELECT id, name FROM sites ORDER BY name")->fetchAll();
+        } else {
+            // Read assignments live from the DB — the login-time session snapshot
+            // goes stale when an Admin assigns sites after the manager logged in.
+            $userModel = new User();
+            $assignedIds = $userModel->getAssignedSiteIds($_SESSION['user_id']);
+            $_SESSION['assigned_site_ids'] = $assignedIds; // refresh so POST-side canAccessSite() works
+            if (empty($assignedIds)) {
+                // Manager has no sites assigned yet — avoid an invalid "IN ()" query
+                $sites = [];
+            } else {
+                $placeholders = implode(',', array_fill(0, count($assignedIds), '?'));
+                $stmt = $db->prepare("SELECT id, name FROM sites WHERE id IN ($placeholders) ORDER BY name");
+                $stmt->execute(array_values($assignedIds));
+                $sites = $stmt->fetchAll();
+            }
+        }
+
+        // For managers, pre-select their site so the worker register loads
+        // automatically — no manual site selection needed. (Multi-site managers
+        // can still switch sites from the dropdown.)
+        if (!$this->isAdmin() && empty($siteId) && !empty($sites)) {
+            $siteId = $sites[0]['id'];
+        }
 
         $this->view('attendance/index', [
             'pageTitle' => 'Worker Attendance',
