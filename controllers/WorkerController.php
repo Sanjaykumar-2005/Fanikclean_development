@@ -121,23 +121,29 @@ class WorkerController extends Controller {
         header('Content-Type: application/json');
         $site_id = $_GET['site_id'] ?? null;
         $month = $_GET['month'] ?? date('Y-m'); // 2026-04
+        $date  = $_GET['date'] ?? date('Y-m-d'); // day whose saved attendance to pre-load
         if (!$site_id) { echo json_encode([]); return; }
-        
+
         $db = Database::connect();
         $stmt = $db->prepare("
             SELECT w.id, w.full_name, w.worker_code, w.category_id, wc.name as category_name,
-                   COALESCE(att.pl_count, 0) as pl_count
-            FROM workers w 
-            JOIN worker_categories wc ON w.category_id = wc.id 
+                   COALESCE(att.pl_count, 0) as pl_count,
+                   td.status   as saved_status,
+                   td.ot_hours as saved_ot,
+                   td.note     as saved_note
+            FROM workers w
+            JOIN worker_categories wc ON w.category_id = wc.id
             LEFT JOIN (
-                SELECT worker_id, COUNT(*) as pl_count 
-                FROM attendance 
+                SELECT worker_id, COUNT(*) as pl_count
+                FROM attendance
                 WHERE status = 'pl' AND TO_CHAR(attendance_date, 'YYYY-MM') = :my
                 GROUP BY worker_id
             ) att ON w.id = att.worker_id
+            LEFT JOIN attendance td ON td.worker_id = w.id AND td.attendance_date = :dt
             WHERE w.site_id = :sid AND w.status = 'Active'
+            ORDER BY w.full_name ASC
         ");
-        $stmt->execute(['sid' => $site_id, 'my' => $month]);
+        $stmt->execute(['sid' => $site_id, 'my' => $month, 'dt' => $date]);
         echo json_encode($stmt->fetchAll());
     }
 

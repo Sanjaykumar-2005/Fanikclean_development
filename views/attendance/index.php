@@ -68,20 +68,26 @@
 
 <!-- Script to load workers via API -->
 <script>
+function esc(str) {
+    return String(str == null ? '' : str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 function loadWorkers() {
     var siteId = document.getElementById('site_select').value;
     var attDate = document.querySelector('input[name="from_date"]').value;
     var month = attDate ? attDate.substring(0, 7) : new Date().toISOString().substring(0, 7);
-    
+
     var tbody = document.getElementById('worker_tbody');
     tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px;">Loading workers...</td></tr>';
-    
+
     if(!siteId) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--text-muted);">Select a site to load workers.</td></tr>';
         return;
     }
 
-    fetch('/api/workers?site_id=' + siteId + '&month=' + month)
+    fetch('/api/workers?site_id=' + siteId + '&month=' + month + '&date=' + (attDate || ''))
     .then(res => res.json())
     .then(data => {
         if(data.length === 0) {
@@ -90,32 +96,41 @@ function loadWorkers() {
         }
         var html = '';
         data.forEach(w => {
+            // Default everyone to Present; show the saved value if this day was already marked.
+            var status = w.saved_status || 'p';
+            var ot = (w.saved_ot != null && w.saved_ot !== '') ? w.saved_ot : 0;
+            var note = w.saved_note || '';
+
+            function opt(val, label) {
+                return '<option value="' + val + '"' + (status === val ? ' selected' : '') + '>' + label + '</option>';
+            }
+
+            var statusOptions = '';
+            statusOptions += opt('p', 'Present (P)');
+            statusOptions += opt('a', 'Absent (A)');
+            statusOptions += opt('off', 'Off Duty (Off)');
+            statusOptions += opt('h', 'Half-Day (H)');
+            // Show PL only if under the monthly cap, or if it's already the saved status.
+            if (parseInt(w.pl_count) < 4 || status === 'pl') {
+                statusOptions += opt('pl', 'Paid Leave (PL)');
+            }
+            statusOptions += opt('sd', 'Special Duty (SD)');
+
             html += '<tr>';
             html += '<td>';
-            html += '  <div class="fw6">' + w.full_name + '</div>';
-            html += '  <div class="fs11 c-secondary">' + w.worker_code + ' | ' + (w.category_name || 'General') + '</div>';
+            html += '  <div class="fw6">' + esc(w.full_name) + '</div>';
+            html += '  <div class="fs11 c-secondary">' + esc(w.worker_code) + ' | ' + esc(w.category_name || 'General') + '</div>';
             html += '</td>';
             html += '<td>';
-            html += '  <select class="form-input" name="attendance['+w.id+'][status]" style="width:145px;">';
-            html += '    <option value="p" selected>Present (P)</option>';
-            html += '    <option value="off">Off Duty (Off)</option>';
-            html += '    <option value="h">Half-Day (H)</option>';
-            
-            // Only show PL if count < 4
-            if (parseInt(w.pl_count) < 4) {
-               html += '    <option value="pl">Paid Leave (PL)</option>';
-            }
-            
-            html += '    <option value="sd">Special Duty (SD)</option>';
-            html += '  </select>';
+            html += '  <select class="form-input" name="attendance['+w.id+'][status]" style="width:145px;">' + statusOptions + '</select>';
             html += '</td>';
             html += '<td>';
             html += '  <div class="flex-center gap8">';
-            html += '    <input type="number" step="0.5" name="attendance['+w.id+'][ot]" class="form-input" style="width:80px;" value="0">';
+            html += '    <input type="number" step="0.5" min="0" name="attendance['+w.id+'][ot]" class="form-input" style="width:80px;" value="' + esc(ot) + '">';
             html += '    <span class="fs11 fw6 c-secondary">hrs</span>';
             html += '  </div>';
             html += '</td>';
-            html += '<td><input type="text" name="attendance['+w.id+'][note]" class="form-input" placeholder="Optional note..."></td>';
+            html += '<td><input type="text" name="attendance['+w.id+'][note]" class="form-input" placeholder="Optional note..." value="' + esc(note) + '"></td>';
             html += '</tr>';
         });
         tbody.innerHTML = html;
